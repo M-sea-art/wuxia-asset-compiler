@@ -26,6 +26,7 @@ jobs:
           blender/primitives.py
           blender/room_factories.py
           blender/factories.py
+          blender/ground_floor_factory.py
           blender/validation.py
           tests/test_scene_spec.py
           tests/test_reference_analyzer.py
