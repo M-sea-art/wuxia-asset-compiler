@@ -145,9 +145,10 @@ def resolve_reference_analysis(
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """Resolve vision estimates against a deterministic base template.
 
-    Estimates are accepted only when their confidence meets the threshold and their
-    value already fits the compiler contract. We intentionally do not silently clamp
-    hallucinated values: rejected estimates are recorded and the template value wins.
+    Estimates are accepted only when their confidence meets the threshold, the selected
+    template actually owns that parameter, and the value already fits the compiler
+    contract. We intentionally do not silently clamp hallucinated values: rejected
+    estimates are recorded and the template value wins.
     """
     validate_reference_analysis(analysis)
     if not 0.0 <= minimum_confidence <= 1.0:
@@ -160,12 +161,16 @@ def resolve_reference_analysis(
     for name, estimate in analysis["parameter_estimates"].items():
         proposed = estimate["value"]
         confidence = float(estimate["confidence"])
-        base_value = spec["parameters"][name]
+        owns_parameter = name in spec["parameters"]
+        base_value = spec["parameters"].get(name)
         lo, hi = PARAM_RANGES[name]
 
         accepted = True
         reason = "accepted"
-        if confidence < minimum_confidence:
+        if not owns_parameter:
+            accepted = False
+            reason = f"selected template {factory!r} does not own parameter {name!r}"
+        elif confidence < minimum_confidence:
             accepted = False
             reason = f"confidence {confidence:.3f} below threshold {minimum_confidence:.3f}"
         elif not lo <= proposed <= hi:
@@ -185,7 +190,7 @@ def resolve_reference_analysis(
                 "parameter": name,
                 "base_value": base_value,
                 "proposed_value": proposed,
-                "resolved_value": spec["parameters"][name],
+                "resolved_value": spec["parameters"].get(name),
                 "confidence": confidence,
                 "accepted": accepted,
                 "reason": reason,
@@ -201,6 +206,7 @@ def resolve_reference_analysis(
         "minimum_parameter_confidence": minimum_confidence,
         "camera": copy.deepcopy(analysis["camera"]),
         "decisions": decisions,
+        "observations": copy.deepcopy(analysis["observations"]),
         "uncertainties": copy.deepcopy(analysis["uncertainties"]),
     }
     return spec, report
