@@ -35,47 +35,78 @@ jobs:
             --seed 23 \
             --minimum-confidence 0.35
 
-      - name: Compile reference-derived multi-room ground floor
+      - name: Compile initial reference-derived ground floor
         run: |
           blender --background --python blender/build_asset.py -- \
             --spec build/reference/cliff_ground_floor.scene_spec.json \
-            --out build/cliff_ground_floor_from_reference.glb \
-            --preview build/cliff_ground_floor_from_reference.png \
-            --preview-dir build/cliff_ground_floor_from_reference_views \
-            --report build/cliff_ground_floor_from_reference.validation.json
+            --out build/cliff_ground_floor_initial.glb \
+            --preview build/cliff_ground_floor_initial.png \
+            --preview-dir build/cliff_ground_floor_initial_views \
+            --report build/cliff_ground_floor_initial.validation.json
 
-      - name: Verify outputs
+      - name: Apply bounded visual QA repair
+        run: |
+          python3 tools/apply_visual_review.py \
+            --spec build/reference/cliff_ground_floor.scene_spec.json \
+            --review examples/cliff_ground_floor.visual_review.json \
+            --out build/repair/cliff_ground_floor.scene_spec.json \
+            --report build/repair/cliff_ground_floor.repair.json \
+            --minimum-confidence 0.40
+
+      - name: Compile repaired ground floor
+        run: |
+          blender --background --python blender/build_asset.py -- \
+            --spec build/repair/cliff_ground_floor.scene_spec.json \
+            --out build/cliff_ground_floor_repaired.glb \
+            --preview build/cliff_ground_floor_repaired.png \
+            --preview-dir build/cliff_ground_floor_repaired_views \
+            --report build/cliff_ground_floor_repaired.validation.json
+
+      - name: Verify outputs and repair behavior
         run: |
           test -s build/cliff_kitchen.glb
-          test -s build/cliff_kitchen.png
           test -s build/reference/cliff_ground_floor.scene_spec.json
           test -s build/reference/cliff_ground_floor.resolution.json
-          test -s build/cliff_ground_floor_from_reference.glb
-          test -s build/cliff_ground_floor_from_reference.png
-          test -s build/cliff_ground_floor_from_reference_views/view_045.png
-          test -s build/cliff_ground_floor_from_reference_views/view_135.png
-          test -s build/cliff_ground_floor_from_reference_views/view_225.png
-          test -s build/cliff_ground_floor_from_reference_views/view_315.png
+          test -s build/cliff_ground_floor_initial.glb
+          test -s build/cliff_ground_floor_initial.png
+          test -s build/repair/cliff_ground_floor.scene_spec.json
+          test -s build/repair/cliff_ground_floor.repair.json
+          test -s build/cliff_ground_floor_repaired.glb
+          test -s build/cliff_ground_floor_repaired.png
+          test -s build/cliff_ground_floor_repaired_views/view_045.png
+          test -s build/cliff_ground_floor_repaired_views/view_135.png
+          test -s build/cliff_ground_floor_repaired_views/view_225.png
+          test -s build/cliff_ground_floor_repaired_views/view_315.png
           python3 - <<'PY'
           import json
           from pathlib import Path
 
           kitchen = json.loads(Path('build/cliff_kitchen.validation.json').read_text())
-          derived = json.loads(Path('build/cliff_ground_floor_from_reference.validation.json').read_text())
+          initial = json.loads(Path('build/cliff_ground_floor_initial.validation.json').read_text())
+          repaired = json.loads(Path('build/cliff_ground_floor_repaired.validation.json').read_text())
           resolution = json.loads(Path('build/reference/cliff_ground_floor.resolution.json').read_text())
+          repair = json.loads(Path('build/repair/cliff_ground_floor.repair.json').read_text())
+
           assert kitchen['status'] == 'pass', kitchen
-          assert derived['status'] == 'pass', derived
-          assert derived['metrics']['mesh_objects'] > 0, derived
-          assert derived['metrics']['triangles'] > 0, derived
+          assert initial['status'] == 'pass', initial
+          assert repaired['status'] == 'pass', repaired
+          assert repaired['metrics']['triangles'] >= initial['metrics']['triangles'], (initial, repaired)
+          assert repaired['metrics']['mesh_objects'] >= initial['metrics']['mesh_objects'], (initial, repaired)
+          assert all(item['accepted'] for item in repair['decisions'])
+          assert all(item['accepted'] for item in repair['room_decisions'])
+          severe = [gap for gap in repair['template_gaps'] if gap['severity'] >= 0.80]
+          assert len(severe) >= 4, severe
           assert any(item['accepted'] for item in resolution['decisions'])
           assert any(not item['accepted'] for item in resolution['decisions'])
-          print('reference-derived validation', json.dumps(derived, indent=2))
-          print('resolution decisions', json.dumps(resolution, indent=2))
+
+          print('initial validation', json.dumps(initial, indent=2))
+          print('repaired validation', json.dumps(repaired, indent=2))
+          print('visual repair', json.dumps(repair, indent=2))
           PY
 
-      - name: Upload compiled assets, resolver outputs, and QA views
+      - name: Upload initial and repaired assets with QA reports
         uses: actions/upload-artifact@v4
         with:
-          name: reference-to-spec-smoke
+          name: visual-qa-repair-smoke
           path: build/
           if-no-files-found: error
