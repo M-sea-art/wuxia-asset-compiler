@@ -18,12 +18,13 @@ for path in (REPO_ROOT, THIS_DIR):
         sys.path.insert(0, str(path))
 
 from compiler.spec import load_spec  # noqa: E402
-from factories import build_cliff_kitchen  # noqa: E402
+from factories import build_cliff_ground_floor, build_cliff_kitchen  # noqa: E402
 from validation import collect_scene_report, write_report  # noqa: E402
 
 
 FACTORIES = {
     "cliff_kitchen": build_cliff_kitchen,
+    "cliff_ground_floor": build_cliff_ground_floor,
 }
 
 
@@ -91,7 +92,7 @@ def setup_camera_and_lighting(spec: dict):
     camera = bpy.context.object
     camera.name = "PreviewCamera"
     camera.data.type = "ORTHO"
-    camera.data.ortho_scale = max(width, depth) * 1.72
+    camera.data.ortho_scale = max(width, depth) * 1.45
     position_camera(camera, target, orbit_radius, 45)
     bpy.context.scene.camera = camera
 
