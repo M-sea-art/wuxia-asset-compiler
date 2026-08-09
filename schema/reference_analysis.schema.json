@@ -52,6 +52,27 @@
         "moss": {"$ref": "#/$defs/numberEstimate"}
       }
     },
+    "room_estimates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["room_id", "parameter_estimates"],
+        "properties": {
+          "room_id": {"type": "string", "minLength": 1},
+          "parameter_estimates": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "width": {"$ref": "#/$defs/numberEstimate"},
+              "lantern_count": {"$ref": "#/$defs/numberEstimate"},
+              "occupancy": {"$ref": "#/$defs/numberEstimate"},
+              "clutter": {"$ref": "#/$defs/numberEstimate"}
+            }
+          }
+        }
+      }
+    },
     "observations": {
       "type": "array",
       "items": {
