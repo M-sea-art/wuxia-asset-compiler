@@ -17,22 +17,24 @@ from analyzer.reference import (  # noqa: E402
     validate_reference_analysis,
 )
 from compiler.spec import normalize_spec  # noqa: E402
-from compiler.templates import make_base_spec  # noqa: E402
+from compiler.templates import make_base_spec, supported_templates  # noqa: E402
 
-FIXTURE = ROOT / "examples" / "cliff_kitchen.reference_analysis.json"
+KITCHEN_FIXTURE = ROOT / "examples" / "cliff_kitchen.reference_analysis.json"
+GROUND_FLOOR_FIXTURE = ROOT / "examples" / "cliff_ground_floor.reference_analysis.json"
 SCHEMA = ROOT / "schema" / "reference_analysis.schema.json"
 
 
-def load_fixture():
-    return json.loads(FIXTURE.read_text(encoding="utf-8"))
+def load_fixture(path: Path):
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
-def test_fixture_validates() -> None:
-    validate_reference_analysis(load_fixture())
+def test_fixtures_validate() -> None:
+    validate_reference_analysis(load_fixture(KITCHEN_FIXTURE))
+    validate_reference_analysis(load_fixture(GROUND_FLOOR_FIXTURE))
 
 
-def test_resolution_accepts_confident_estimates_and_keeps_uncertain_defaults() -> None:
-    analysis = load_fixture()
+def test_kitchen_resolution_accepts_confident_estimates_and_keeps_uncertain_defaults() -> None:
+    analysis = load_fixture(KITCHEN_FIXTURE)
     spec, report = resolve_reference_analysis(analysis, seed=19, minimum_confidence=0.35)
     base = make_base_spec("cliff_kitchen", seed=19)
 
@@ -43,18 +45,44 @@ def test_resolution_accepts_confident_estimates_and_keeps_uncertain_defaults() -
     assert spec["parameters"]["stone_step_count"] == 10
     assert spec["parameters"]["wood_age"] == 0.72
 
-    # Low-confidence vision estimate must not overwrite deterministic template state.
     assert spec["parameters"]["moss"] == base["parameters"]["moss"]
     moss_decision = next(item for item in report["decisions"] if item["parameter"] == "moss")
     assert moss_decision["accepted"] is False
     assert "below threshold" in moss_decision["reason"]
+    normalize_spec(spec)
 
-    # Output remains a valid compiler scene spec after resolution.
+
+def test_ground_floor_reference_resolves_against_room_template() -> None:
+    analysis = load_fixture(GROUND_FLOOR_FIXTURE)
+    spec, report = resolve_reference_analysis(analysis, seed=23, minimum_confidence=0.35)
+
+    assert spec["factory"] == "cliff_ground_floor"
+    assert spec["seed"] == 23
+    assert spec["parameters"]["width"] == 21.2
+    assert spec["parameters"]["depth"] == 5.4
+    assert spec["parameters"]["wall_height"] == 3.05
+    assert spec["parameters"]["wood_age"] == 0.82
+    assert len(spec["parameters"]["rooms"]) == 4
+    assert [room["template"] for room in spec["parameters"]["rooms"]] == [
+        "sect_gate_room",
+        "infirmary_rest_room",
+        "kitchen_room",
+        "dining_room",
+    ]
+
+    # The model noticed a roof pitch in the full mother image, but this selected slice
+    # does not own roof geometry. The resolver must record and reject that observation.
+    roof_decision = next(
+        item for item in report["decisions"] if item["parameter"] == "roof_pitch_deg"
+    )
+    assert roof_decision["accepted"] is False
+    assert "does not own parameter" in roof_decision["reason"]
+    assert roof_decision["resolved_value"] is None
     normalize_spec(spec)
 
 
 def test_out_of_range_estimate_is_rejected_not_clamped() -> None:
-    analysis = load_fixture()
+    analysis = load_fixture(KITCHEN_FIXTURE)
     analysis["parameter_estimates"]["roof_pitch_deg"] = {
         "value": 82.0,
         "confidence": 0.99,
@@ -72,7 +100,7 @@ def test_out_of_range_estimate_is_rejected_not_clamped() -> None:
 
 
 def test_unknown_model_field_is_rejected() -> None:
-    analysis = load_fixture()
+    analysis = load_fixture(KITCHEN_FIXTURE)
     analysis["creative_blender_script"] = "bpy.ops.mesh.primitive_monkey_add()"
     try:
         validate_reference_analysis(analysis)
@@ -82,17 +110,18 @@ def test_unknown_model_field_is_rejected() -> None:
         raise AssertionError("unknown model fields must be rejected")
 
 
-def test_schema_lists_the_same_factory() -> None:
+def test_schema_lists_same_factories_as_templates() -> None:
     schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
-    assert schema["properties"]["factory_candidate"]["enum"] == ["cliff_kitchen"]
+    assert set(schema["properties"]["factory_candidate"]["enum"]) == set(supported_templates())
 
 
 def main() -> None:
-    test_fixture_validates()
-    test_resolution_accepts_confident_estimates_and_keeps_uncertain_defaults()
+    test_fixtures_validate()
+    test_kitchen_resolution_accepts_confident_estimates_and_keeps_uncertain_defaults()
+    test_ground_floor_reference_resolves_against_room_template()
     test_out_of_range_estimate_is_rejected_not_clamped()
     test_unknown_model_field_is_rejected()
-    test_schema_lists_the_same_factory()
+    test_schema_lists_same_factories_as_templates()
     print("reference analyzer contract tests: PASS")
 
 
