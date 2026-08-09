@@ -18,7 +18,8 @@ for path in (REPO_ROOT, THIS_DIR):
         sys.path.insert(0, str(path))
 
 from compiler.spec import load_spec  # noqa: E402
-from factories import build_cliff_ground_floor, build_cliff_kitchen  # noqa: E402
+from factories import build_cliff_kitchen  # noqa: E402
+from ground_floor_factory import build_cliff_ground_floor  # noqa: E402
 from validation import collect_scene_report, write_report  # noqa: E402
 
 
@@ -29,6 +30,7 @@ FACTORIES = {
 
 
 VIEW_AZIMUTHS = (45, 135, 225, 315)
+CANONICAL_AZIMUTH = 90
 
 
 def parse_args() -> argparse.Namespace:
@@ -41,7 +43,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--spec", required=True)
     parser.add_argument("--out", required=True)
-    parser.add_argument("--preview", help="Render one canonical 45-degree preview")
+    parser.add_argument("--preview", help="Render one canonical front/cutaway preview")
     parser.add_argument(
         "--preview-dir",
         help="Render four fixed QA views at 45/135/225/315 degrees",
@@ -72,10 +74,11 @@ def aim_object_at(obj, target: Vector) -> None:
 
 def position_camera(camera, target: Vector, radius: float, azimuth_deg: float) -> None:
     azimuth = math.radians(azimuth_deg)
+    vertical_ratio = float(camera.get("wuxia_vertical_ratio", 0.45))
     camera.location = (
         target.x + math.cos(azimuth) * radius,
         target.y + math.sin(azimuth) * radius,
-        target.z + radius * 0.72,
+        target.z + radius * vertical_ratio,
     )
     aim_object_at(camera, target)
 
@@ -85,15 +88,17 @@ def setup_camera_and_lighting(spec: dict):
     width = float(parameters["width"])
     depth = float(parameters["depth"])
     height = float(parameters["platform_height"]) + float(parameters["wall_height"])
-    orbit_radius = max(width, depth) * 2.0
-    target = Vector((0.0, 0.0, height * 0.55))
+    is_compound_floor = spec["factory"] == "cliff_ground_floor"
+    orbit_radius = max(width, depth) * (1.5 if is_compound_floor else 2.0)
+    target = Vector((0.0, 0.0, height * (0.50 if is_compound_floor else 0.55)))
 
     bpy.ops.object.camera_add()
     camera = bpy.context.object
     camera.name = "PreviewCamera"
     camera.data.type = "ORTHO"
-    camera.data.ortho_scale = max(width, depth) * 1.45
-    position_camera(camera, target, orbit_radius, 45)
+    camera.data.ortho_scale = max(width, depth) * (1.12 if is_compound_floor else 1.45)
+    camera["wuxia_vertical_ratio"] = 0.18 if is_compound_floor else 0.45
+    position_camera(camera, target, orbit_radius, CANONICAL_AZIMUTH)
     bpy.context.scene.camera = camera
 
     bpy.ops.object.light_add(type="SUN", location=(0.0, 0.0, height + 8.0))
@@ -108,7 +113,7 @@ def setup_camera_and_lighting(spec: dict):
 
     bpy.ops.object.light_add(
         type="AREA",
-        location=(-orbit_radius * 0.35, orbit_radius * 0.25, height + orbit_radius * 0.45),
+        location=(-orbit_radius * 0.35, orbit_radius * 0.25, height + orbit_radius * 0.30),
     )
     area = bpy.context.object
     area.name = "SoftFill"
@@ -180,7 +185,7 @@ def main() -> None:
     camera, target, orbit_radius = setup_camera_and_lighting(spec)
 
     if args.preview:
-        render_preview(args.preview, camera, target, orbit_radius, 45)
+        render_preview(args.preview, camera, target, orbit_radius, CANONICAL_AZIMUTH)
     if args.preview_dir:
         render_qa_views(args.preview_dir, camera, target, orbit_radius)
 
