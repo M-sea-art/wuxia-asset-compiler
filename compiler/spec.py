@@ -51,11 +51,28 @@ PARAM_RANGES = {
 
 INTEGER_PARAMETERS = {"stone_step_count", "post_count_x"}
 
-GROUND_FLOOR_REQUIRED_PARAMETERS = REQUIRED_PARAMETERS | {"rooms"}
-GROUND_FLOOR_ALLOWED_PARAMETERS = set(PARAM_RANGES) | {"rooms"}
+GROUND_FLOOR_NUMERIC_PARAMETERS = {
+    "width",
+    "depth",
+    "wall_height",
+    "platform_height",
+    "cliff_embed",
+    "stone_step_count",
+    "wood_age",
+    "moss",
+}
+GROUND_FLOOR_REQUIRED_PARAMETERS = {
+    "width",
+    "depth",
+    "wall_height",
+    "platform_height",
+    "cliff_embed",
+    "stone_step_count",
+    "rooms",
+}
+GROUND_FLOOR_ALLOWED_PARAMETERS = GROUND_FLOOR_NUMERIC_PARAMETERS | {"rooms"}
 GROUND_FLOOR_OPTIONAL_DEFAULTS = {
     "wood_age": 0.68,
-    "tile_damage": 0.12,
     "moss": 0.22,
 }
 
@@ -184,9 +201,11 @@ def _validate_parameters(factory: str, parameters: Any, errors: list[str]) -> No
     if factory == "cliff_ground_floor":
         allowed_parameters = GROUND_FLOOR_ALLOWED_PARAMETERS
         required_parameters = GROUND_FLOOR_REQUIRED_PARAMETERS
+        numeric_parameters = GROUND_FLOOR_NUMERIC_PARAMETERS
     else:
         allowed_parameters = set(PARAM_RANGES)
         required_parameters = REQUIRED_PARAMETERS
+        numeric_parameters = set(PARAM_RANGES)
 
     unknown_parameters = set(parameters) - allowed_parameters
     missing_parameters = required_parameters - set(parameters)
@@ -196,7 +215,7 @@ def _validate_parameters(factory: str, parameters: Any, errors: list[str]) -> No
         errors.append(f"missing parameters: {sorted(missing_parameters)}")
 
     for key, value in parameters.items():
-        if key not in PARAM_RANGES:
+        if key not in numeric_parameters:
             continue
         _validate_numeric_parameter(key, value, errors)
 
