@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/M-sea-art/wuxia-asset-compiler/schema/scene_spec.schema.json",
+  "title": "Wuxia Asset Compiler Scene Spec",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "factory", "seed", "parameters", "style"],
+  "properties": {
+    "version": {"type": "integer", "const": 1},
+    "factory": {"type": "string", "enum": ["cliff_kitchen"]},
+    "seed": {"type": "integer", "minimum": 0, "maximum": 2147483647},
+    "parameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "width", "depth", "wall_height", "roof_pitch_deg",
+        "eave_overhang", "platform_height", "cliff_embed", "stone_step_count"
+      ],
+      "properties": {
+        "width": {"type": "number", "minimum": 3.0, "maximum": 20.0},
+        "depth": {"type": "number", "minimum": 2.5, "maximum": 14.0},
+        "wall_height": {"type": "number", "minimum": 2.0, "maximum": 6.0},
+        "roof_pitch_deg": {"type": "number", "minimum": 15.0, "maximum": 55.0},
+        "eave_overhang": {"type": "number", "minimum": 0.2, "maximum": 2.0},
+        "platform_height": {"type": "number", "minimum": 0.2, "maximum": 4.0},
+        "cliff_embed": {"type": "number", "minimum": 0.0, "maximum": 1.0},
+        "stone_step_count": {"type": "integer", "minimum": 3, "maximum": 30},
+        "post_count_x": {"type": "integer", "minimum": 2, "maximum": 12},
+        "wood_age": {"type": "number", "minimum": 0.0, "maximum": 1.0},
+        "tile_damage": {"type": "number", "minimum": 0.0, "maximum": 1.0},
+        "moss": {"type": "number", "minimum": 0.0, "maximum": 1.0}
+      }
+    },
+    "style": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["palette", "roof", "wood"],
+      "properties": {
+        "palette": {"type": "string", "enum": ["paper_ink_old_wood"]},
+        "roof": {"type": "string", "enum": ["dark_clay_tile"]},
+        "wood": {"type": "string", "enum": ["aged_dark_timber"]}
+      }
+    }
+  }
+}
