@@ -55,6 +55,108 @@
       "evidence": "A shallow traditional roof pitch is visible on upper levels, but this parameter belongs to roofed templates rather than the ground-floor slice."
     }
   },
+  "room_estimates": [
+    {
+      "room_id": "gate",
+      "parameter_estimates": {
+        "width": {
+          "value": 3.8,
+          "confidence": 0.68,
+          "evidence": "The lower-left entrance bay is visibly narrower than the kitchen and dining bays."
+        },
+        "lantern_count": {
+          "value": 3,
+          "confidence": 0.88,
+          "evidence": "Multiple warm light sources frame the gate and adjacent entry frontage."
+        },
+        "occupancy": {
+          "value": 2,
+          "confidence": 0.82,
+          "evidence": "The entry zone contains a guard-like figure and an approaching visitor."
+        },
+        "clutter": {
+          "value": 0.72,
+          "confidence": 0.86,
+          "evidence": "The gate bay contains banners, weapons, lanterns, stonework, and small utility objects despite its narrow footprint."
+        }
+      }
+    },
+    {
+      "room_id": "infirmary",
+      "parameter_estimates": {
+        "width": {
+          "value": 4.2,
+          "confidence": 0.72,
+          "evidence": "The bed-and-care bay is compact but wide enough for a bed, caregiver circulation, shelving, and curtains."
+        },
+        "lantern_count": {
+          "value": 1,
+          "confidence": 0.91,
+          "evidence": "One dominant hanging warm light reads over the rest and care area."
+        },
+        "occupancy": {
+          "value": 2,
+          "confidence": 0.78,
+          "evidence": "The visible composition implies a resting person plus one nearby caregiver or attendant."
+        },
+        "clutter": {
+          "value": 0.82,
+          "confidence": 0.90,
+          "evidence": "Bedding, curtains, shelving, bowls, medicine containers, stools, and side furniture make the bay substantially denser than the current white-box template."
+        }
+      }
+    },
+    {
+      "room_id": "kitchen",
+      "parameter_estimates": {
+        "width": {
+          "value": 5.6,
+          "confidence": 0.80,
+          "evidence": "The cooking bay is one of the broadest lower-floor spaces and contains a central hearth plus preparation circulation."
+        },
+        "lantern_count": {
+          "value": 2,
+          "confidence": 0.72,
+          "evidence": "The cooking zone is illuminated by both suspended warm light and visible hearth/fire light."
+        },
+        "occupancy": {
+          "value": 3,
+          "confidence": 0.83,
+          "evidence": "Several figures are engaged around the cooking and preparation area."
+        },
+        "clutter": {
+          "value": 0.96,
+          "confidence": 0.97,
+          "evidence": "The kitchen is densely packed with pots, bowls, shelves, baskets, ingredients, firewood, tools, jars, and preparation surfaces."
+        }
+      }
+    },
+    {
+      "room_id": "dining",
+      "parameter_estimates": {
+        "width": {
+          "value": 6.0,
+          "confidence": 0.83,
+          "evidence": "The communal meal bay occupies the largest continuous lower-floor gathering area."
+        },
+        "lantern_count": {
+          "value": 2,
+          "confidence": 0.90,
+          "evidence": "Two strong warm light pools read across the dining and serving zone."
+        },
+        "occupancy": {
+          "value": 7,
+          "confidence": 0.92,
+          "evidence": "The reference shows a crowded shared meal with roughly six to eight seated or serving figures."
+        },
+        "clutter": {
+          "value": 0.92,
+          "confidence": 0.96,
+          "evidence": "Tables, stools, dishes, bowls, jars, cupboards, serving objects, and wall storage fill most of the usable visual space."
+        }
+      }
+    }
+  ],
   "observations": [
     {
       "subject": "composition",
@@ -91,6 +193,6 @@
     "True room depth cannot be recovered from the frontal cutaway because rear geometry is occluded.",
     "Exact room-width ratios are approximate because vertical columns and props partially hide bay boundaries.",
     "The visible right-side stair belongs to the larger compound circulation system, so its exact lower-floor ownership is ambiguous.",
-    "Character counts and detailed prop counts are intentionally not compiled in this first structural loop."
+    "Character silhouettes are not part of the environment GLB in this slice, so occupancy drives deterministic furniture and place-setting density rather than NPC meshes."
   ]
 }
