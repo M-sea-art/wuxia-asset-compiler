@@ -1,0 +1,24 @@
+name: contract-tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  pure-python-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Run scene-spec contract tests
+        run: python tests/test_scene_spec.py
+      - name: Compile Python sources
+        run: >-
+          python -m py_compile
+          compiler/spec.py
+          blender/build_asset.py
+          blender/factories.py
+          blender/validation.py
+          tests/test_scene_spec.py

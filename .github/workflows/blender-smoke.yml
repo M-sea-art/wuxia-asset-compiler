@@ -1,0 +1,53 @@
+name: blender-smoke
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  compile-example:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Blender and headless graphics runtime
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y blender libegl1 libgl1-mesa-dri libglx-mesa0 python3-numpy
+          blender --version
+          blender --background --python-expr "import sys; print('BLENDER_PYTHON', sys.version); print('BLENDER_PATHS', sys.path); import numpy; print('NUMPY', numpy.__version__)"
+
+      - name: Compile cliff kitchen
+        run: |
+          blender --background --python blender/build_asset.py -- \
+            --spec examples/cliff_kitchen.scene_spec.json \
+            --out build/cliff_kitchen.glb \
+            --preview build/cliff_kitchen.png \
+            --preview-dir build/cliff_kitchen_views \
+            --report build/cliff_kitchen.validation.json
+
+      - name: Verify outputs
+        run: |
+          test -s build/cliff_kitchen.glb
+          test -s build/cliff_kitchen.png
+          test -s build/cliff_kitchen_views/view_045.png
+          test -s build/cliff_kitchen_views/view_135.png
+          test -s build/cliff_kitchen_views/view_225.png
+          test -s build/cliff_kitchen_views/view_315.png
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          report = json.loads(Path('build/cliff_kitchen.validation.json').read_text())
+          assert report['status'] == 'pass', report
+          assert report['metrics']['mesh_objects'] > 0, report
+          assert report['metrics']['triangles'] > 0, report
+          print(json.dumps(report, indent=2))
+          PY
+
+      - name: Upload compiled asset and QA views
+        uses: actions/upload-artifact@v4
+        with:
+          name: cliff-kitchen-smoke
+          path: build/
+          if-no-files-found: error
