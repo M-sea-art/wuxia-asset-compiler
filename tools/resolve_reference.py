@@ -48,9 +48,15 @@ def main() -> None:
 
     spec_path = write_json(args.out, spec)
     report_path = write_json(args.report, report)
-    accepted = sum(1 for item in report["decisions"] if item["accepted"])
-    rejected = len(report["decisions"]) - accepted
-    print(f"resolved factory={spec['factory']} accepted={accepted} rejected={rejected}")
+    global_accepted = sum(1 for item in report["decisions"] if item["accepted"])
+    global_rejected = len(report["decisions"]) - global_accepted
+    room_accepted = sum(1 for item in report.get("room_decisions", []) if item["accepted"])
+    room_rejected = len(report.get("room_decisions", [])) - room_accepted
+    print(
+        f"resolved factory={spec['factory']} "
+        f"global={global_accepted} accepted/{global_rejected} rejected "
+        f"room={room_accepted} accepted/{room_rejected} rejected"
+    )
     print(f"scene_spec={spec_path}")
     print(f"resolution_report={report_path}")
 
