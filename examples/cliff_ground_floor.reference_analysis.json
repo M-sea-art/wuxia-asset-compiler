@@ -1,0 +1,96 @@
+{
+  "analysis_version": 1,
+  "factory_candidate": "cliff_ground_floor",
+  "factory_confidence": 0.97,
+  "camera": {
+    "projection": "orthographic_like",
+    "azimuth_deg": 0.0,
+    "elevation_deg": 10.0,
+    "confidence": 0.90
+  },
+  "parameter_estimates": {
+    "width": {
+      "value": 21.2,
+      "confidence": 0.82,
+      "evidence": "The visible lower floor spans four broad functional bays with a long horizontal cutaway frontage."
+    },
+    "depth": {
+      "value": 5.4,
+      "confidence": 0.48,
+      "evidence": "Furniture depth, beds, tables, shelves, and the rear cliff wall imply a compact room depth around five meters, but the back is heavily occluded."
+    },
+    "wall_height": {
+      "value": 3.05,
+      "confidence": 0.77,
+      "evidence": "Door, bed, shelving, and standing-character scale suggest a roughly three-meter clear floor height."
+    },
+    "platform_height": {
+      "value": 0.78,
+      "confidence": 0.61,
+      "evidence": "The lower timber floor is visibly raised above the foreground rock shelf by less than one meter."
+    },
+    "cliff_embed": {
+      "value": 0.76,
+      "confidence": 0.84,
+      "evidence": "The compound is deeply attached to the cliff and mountain wall, with rock surrounding the rear and both side edges."
+    },
+    "stone_step_count": {
+      "value": 11,
+      "confidence": 0.43,
+      "evidence": "The right-side access path contains about ten to twelve visible stone risers in the lower approach."
+    },
+    "wood_age": {
+      "value": 0.82,
+      "confidence": 0.91,
+      "evidence": "Beams, columns, doors, furniture, and railings show darkened, uneven, heavily weathered timber across the scene."
+    },
+    "moss": {
+      "value": 0.24,
+      "confidence": 0.72,
+      "evidence": "Vegetation and damp growth appear around the rock base and structural edges, but do not dominate the architecture."
+    },
+    "roof_pitch_deg": {
+      "value": 28.0,
+      "confidence": 0.88,
+      "evidence": "A shallow traditional roof pitch is visible on upper levels, but this parameter belongs to roofed templates rather than the ground-floor slice."
+    }
+  },
+  "observations": [
+    {
+      "subject": "composition",
+      "statement": "The reference is a frontal open-cutaway view of a three-level cliff sect compound; this first target isolates only the lowest inhabited level.",
+      "confidence": 0.98
+    },
+    {
+      "subject": "ground_floor_layout",
+      "statement": "The lower level reads left-to-right as an entry/gate bay, an infirmary/rest bay, a cooking bay, and a communal dining bay.",
+      "confidence": 0.94
+    },
+    {
+      "subject": "upper_boundary",
+      "statement": "The ground-floor ceiling is structurally the next floor deck and exposed beams, not an independent roof.",
+      "confidence": 0.96
+    },
+    {
+      "subject": "lighting",
+      "statement": "Interior spaces are lit by warm lanterns and firelight against a cool, misty night exterior.",
+      "confidence": 0.97
+    },
+    {
+      "subject": "materials",
+      "statement": "The dominant material language is aged dark timber, rough stone, worn plaster, ceramic vessels, and low-sheen metal cookware.",
+      "confidence": 0.95
+    },
+    {
+      "subject": "density",
+      "statement": "The reference has high lived-in prop density, especially shelves, bowls, jars, bedding, utensils, tables, stools, and storage bundles.",
+      "confidence": 0.96
+    }
+  ],
+  "uncertainties": [
+    "True room depth cannot be recovered from the frontal cutaway because rear geometry is occluded.",
+    "Exact room-width ratios are approximate because vertical columns and props partially hide bay boundaries.",
+    "The visible right-side stair belongs to the larger compound circulation system, so its exact lower-floor ownership is ambiguous.",
+    "Character counts and detailed prop counts are intentionally not compiled in this first structural loop."
+  ]
+}
