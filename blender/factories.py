@@ -7,55 +7,35 @@ these functions own mesh construction details.
 from __future__ import annotations
 
 import math
-import random
 from typing import Any
 
-import bpy
+from primitives import add_box, add_rock, make_material
+from room_factories import ROOM_FACTORIES
 
 
-def _hex_rgb(value: str) -> tuple[float, float, float, float]:
-    value = value.lstrip("#")
-    if len(value) != 6:
-        raise ValueError(f"Expected #RRGGBB color, got {value!r}")
-    rgb = tuple(int(value[i:i + 2], 16) / 255.0 for i in (0, 2, 4))
-    return (*rgb, 1.0)
-
-
-def make_material(name: str, color: str, roughness: float = 0.7, metallic: float = 0.0):
-    mat = bpy.data.materials.get(name) or bpy.data.materials.new(name=name)
-    mat.use_nodes = True
-    bsdf = mat.node_tree.nodes.get("Principled BSDF")
-    if bsdf is not None:
-        bsdf.inputs["Base Color"].default_value = _hex_rgb(color)
-        bsdf.inputs["Roughness"].default_value = roughness
-        bsdf.inputs["Metallic"].default_value = metallic
-    return mat
-
-
-def add_box(name: str, location, dimensions, material=None, rotation=(0.0, 0.0, 0.0)):
-    bpy.ops.mesh.primitive_cube_add(size=1.0, location=location, rotation=rotation)
-    obj = bpy.context.object
-    obj.name = name
-    obj.dimensions = dimensions
-    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-    if material is not None:
-        obj.data.materials.append(material)
-    return obj
-
-
-def add_rock(name: str, location, scale, material, seed: int):
-    rng = random.Random(seed)
-    bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=2, radius=1.0, location=location)
-    obj = bpy.context.object
-    obj.name = name
-    obj.scale = scale
-    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-    for vertex in obj.data.vertices:
-        direction = vertex.co.normalized()
-        jitter = 1.0 + rng.uniform(-0.16, 0.16)
-        vertex.co = direction * vertex.co.length * jitter
-    obj.data.materials.append(material)
-    return obj
+def _make_material_pack(wood_age: float, moss: float) -> dict[str, Any]:
+    wood_luma = max(0.10, 0.27 - 0.08 * wood_age)
+    wood_hex = "#%02x%02x%02x" % (
+        int(255 * wood_luma),
+        int(255 * wood_luma * 0.82),
+        int(255 * wood_luma * 0.62),
+    )
+    stone_green = int(255 * min(0.30, 0.17 + moss * 0.10))
+    stone_hex = f"#{int(255 * 0.26):02x}{stone_green:02x}{int(255 * 0.22):02x}"
+    return {
+        "wood": make_material("Wuxia_AgedWood", wood_hex, roughness=0.78),
+        "roof": make_material("Wuxia_DarkTile", "#242426", roughness=0.84),
+        "stone": make_material("Wuxia_Stone", stone_hex, roughness=0.93),
+        "plaster": make_material("Wuxia_Plaster", "#afa891", roughness=0.90),
+        "cloth": make_material("Wuxia_Cloth", "#6d6556", roughness=0.95),
+        "metal": make_material("Wuxia_Iron", "#25282a", roughness=0.55, metallic=0.65),
+        "lantern": make_material(
+            "Wuxia_LanternGlow",
+            "#e7a54d",
+            roughness=0.65,
+            emission_strength=1.6,
+        ),
+    }
 
 
 def _add_timber_frame(
@@ -188,20 +168,7 @@ def build_cliff_kitchen(spec: dict[str, Any]):
     step_count = int(p["stone_step_count"])
     wood_age = float(p.get("wood_age", 0.5))
     moss = float(p.get("moss", 0.0))
-
-    wood_luma = max(0.10, 0.27 - 0.08 * wood_age)
-    wood_hex = "#%02x%02x%02x" % (
-        int(255 * wood_luma),
-        int(255 * wood_luma * 0.82),
-        int(255 * wood_luma * 0.62),
-    )
-    stone_green = int(255 * min(0.30, 0.17 + moss * 0.10))
-    stone_hex = f"#{int(255 * 0.26):02x}{stone_green:02x}{int(255 * 0.22):02x}"
-
-    wood_mat = make_material("Wuxia_AgedWood", wood_hex, roughness=0.78)
-    roof_mat = make_material("Wuxia_DarkTile", "#242426", roughness=0.84)
-    stone_mat = make_material("Wuxia_Stone", stone_hex, roughness=0.93)
-    plaster_mat = make_material("Wuxia_Plaster", "#afa891", roughness=0.90)
+    materials = _make_material_pack(wood_age, moss)
 
     z0 = platform_height
     cliff_embed = float(p["cliff_embed"])
@@ -209,31 +176,137 @@ def build_cliff_kitchen(spec: dict[str, Any]):
         "CliffMass",
         (-width * (0.30 + 0.22 * cliff_embed), -depth * 0.08, -0.7),
         (width * 0.70, depth * 0.90, max(2.8, platform_height + 2.0)),
-        stone_mat,
+        materials["stone"],
         seed=seed + 101,
     )
     add_box(
         "StonePlatform",
         (0.0, 0.0, platform_height - 0.14),
         (width + 0.65, depth + 0.55, 0.28),
-        stone_mat,
+        materials["stone"],
     )
 
-    add_box("TimberFloor", (0.0, 0.0, z0), (width, depth, 0.18), wood_mat)
+    add_box("TimberFloor", (0.0, 0.0, z0), (width, depth, 0.18), materials["wood"])
     add_box(
         "BackWall",
         (0.0, -depth / 2 + 0.18, z0 + wall_height * 0.48),
         (width - 0.7, 0.12, wall_height * 0.78),
-        plaster_mat,
+        materials["plaster"],
     )
 
-    _add_timber_frame(width, depth, wall_height, z0, post_count_x, wood_mat)
-    _add_gabled_roof(width, depth, z0 + wall_height, pitch, overhang, roof_mat)
-    _add_stone_steps(width, depth, z0, step_count, stone_mat)
-    _add_kitchen_props(width, depth, z0, stone_mat, wood_mat)
+    _add_timber_frame(width, depth, wall_height, z0, post_count_x, materials["wood"])
+    _add_gabled_roof(width, depth, z0 + wall_height, pitch, overhang, materials["roof"])
+    _add_stone_steps(width, depth, z0, step_count, materials["stone"])
+    _add_kitchen_props(width, depth, z0, materials["stone"], materials["wood"])
 
     return {
         "factory": "cliff_kitchen",
+        "bounds_hint": [
+            width + 2 * overhang,
+            depth + 2 * overhang,
+            z0 + wall_height + depth,
+        ],
+    }
+
+
+def _room_centers(width: float, rooms: list[dict[str, Any]]) -> list[tuple[float, dict[str, Any]]]:
+    total_room_width = sum(float(room["width"]) for room in rooms)
+    gap_total = max(0.0, width - total_room_width)
+    gap = gap_total / max(len(rooms) - 1, 1)
+    cursor = -width / 2
+    result: list[tuple[float, dict[str, Any]]] = []
+    for room in rooms:
+        room_width = float(room["width"])
+        center_x = cursor + room_width / 2
+        result.append((center_x, room))
+        cursor += room_width + gap
+    return result
+
+
+def _add_room_boundary_frame(
+    width: float,
+    depth: float,
+    wall_height: float,
+    z0: float,
+    centers: list[tuple[float, dict[str, Any]]],
+    wood_mat,
+):
+    post_size = 0.20
+    boundary_xs = [-width / 2]
+    for center_x, room in centers:
+        boundary_xs.append(center_x + float(room["width"]) / 2)
+    for x in boundary_xs:
+        for y in (-depth / 2 + 0.30, depth / 2 - 0.30):
+            add_box(
+                "GroundFloorPost",
+                (x, y, z0 + wall_height / 2),
+                (post_size, post_size, wall_height),
+                wood_mat,
+            )
+    for y in (-depth / 2 + 0.30, depth / 2 - 0.30):
+        add_box(
+            "GroundFloorLongBeam",
+            (0.0, y, z0 + wall_height - 0.12),
+            (width + post_size, 0.18, 0.18),
+            wood_mat,
+        )
+
+
+def build_cliff_ground_floor(spec: dict[str, Any]):
+    """Build the first composable multi-room slice from the reference mother image."""
+    p = spec["parameters"]
+    seed = int(spec.get("seed", 0))
+    width = float(p["width"])
+    depth = float(p["depth"])
+    wall_height = float(p["wall_height"])
+    pitch = float(p["roof_pitch_deg"])
+    overhang = float(p["eave_overhang"])
+    platform_height = float(p["platform_height"])
+    cliff_embed = float(p["cliff_embed"])
+    step_count = int(p["stone_step_count"])
+    rooms = list(p["rooms"])
+    materials = _make_material_pack(float(p.get("wood_age", 0.68)), float(p.get("moss", 0.22)))
+
+    z0 = platform_height
+    add_rock(
+        "GroundFloorCliffMass",
+        (-width * (0.26 + 0.18 * cliff_embed), -depth * 0.18, -0.8),
+        (width * 0.72, depth * 0.92, max(3.0, platform_height + 2.3)),
+        materials["stone"],
+        seed=seed + 301,
+    )
+    add_box(
+        "GroundFloorStonePlatform",
+        (0.0, 0.0, z0 - 0.14),
+        (width + 0.85, depth + 0.65, 0.28),
+        materials["stone"],
+    )
+    add_box(
+        "GroundFloorTimberDeck",
+        (0.0, 0.0, z0),
+        (width, depth, 0.18),
+        materials["wood"],
+    )
+    add_box(
+        "GroundFloorBackWall",
+        (0.0, -depth / 2 + 0.18, z0 + wall_height * 0.48),
+        (width - 0.45, 0.14, wall_height * 0.82),
+        materials["plaster"],
+    )
+
+    centers = _room_centers(width, rooms)
+    _add_room_boundary_frame(width, depth, wall_height, z0, centers, materials["wood"])
+    _add_gabled_roof(width, depth, z0 + wall_height, pitch, overhang, materials["roof"])
+
+    for center_x, room in centers:
+        room_factory = ROOM_FACTORIES[room["template"]]
+        room_factory(room, center_x, depth, z0, wall_height, materials)
+
+    _add_stone_steps(width, depth, z0, step_count, materials["stone"])
+
+    return {
+        "factory": "cliff_ground_floor",
+        "room_count": len(rooms),
         "bounds_hint": [
             width + 2 * overhang,
             depth + 2 * overhang,
