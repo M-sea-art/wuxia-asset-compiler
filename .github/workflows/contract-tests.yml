@@ -23,6 +23,8 @@ jobs:
           compiler/templates.py
           analyzer/reference.py
           blender/build_asset.py
+          blender/primitives.py
+          blender/room_factories.py
           blender/factories.py
           blender/validation.py
           tests/test_scene_spec.py
