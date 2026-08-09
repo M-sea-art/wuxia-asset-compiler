@@ -1,0 +1,135 @@
+{
+  "review_version": 1,
+  "factory": "cliff_ground_floor",
+  "scores": {
+    "composition": 0.58,
+    "room_identity": 0.46,
+    "semantic_density": 0.34,
+    "lighting": 0.52,
+    "material_style": 0.31
+  },
+  "parameter_patches": {
+    "cliff_embed": {
+      "value": 0.70,
+      "confidence": 0.62,
+      "evidence": "The rendered cliff support still occupies a large dark foreground wedge, while the reference reads the rock as surrounding/backing the inhabited structure rather than dominating its lower silhouette."
+    },
+    "platform_height": {
+      "value": 0.72,
+      "confidence": 0.55,
+      "evidence": "The rendered floor sits slightly too high above the rock support compared with the reference lower level, which feels more embedded into the stone shelf."
+    }
+  },
+  "room_patches": [
+    {
+      "room_id": "gate",
+      "parameter_patches": {
+        "lantern_count": {
+          "value": 4,
+          "confidence": 0.70,
+          "evidence": "The rendered entry bay remains visually flat; the reference entrance has several distinct warm light accents around the doorway and frontage."
+        },
+        "clutter": {
+          "value": 0.82,
+          "confidence": 0.84,
+          "evidence": "The generated gate bay still reads as sparse compared with the reference, which contains banners, weapons, small storage, lanterns, and layered stone/wood details."
+        }
+      }
+    },
+    {
+      "room_id": "infirmary",
+      "parameter_patches": {
+        "clutter": {
+          "value": 0.90,
+          "confidence": 0.88,
+          "evidence": "The current infirmary has a bed and small medicine row but lacks the dense bedside and storage layering visible around the reference bed."
+        }
+      }
+    },
+    {
+      "room_id": "kitchen",
+      "parameter_patches": {
+        "lantern_count": {
+          "value": 3,
+          "confidence": 0.78,
+          "evidence": "The reference cooking area has a strong warm hearth pool plus overhead illumination; the generated bay remains comparatively dim and uniform."
+        },
+        "clutter": {
+          "value": 1.0,
+          "confidence": 0.96,
+          "evidence": "Even after the first density pass, the generated kitchen contains far fewer visually legible objects than the reference kitchen packed with cookware, jars, baskets, shelves, tools, ingredients, and firewood."
+        }
+      }
+    },
+    {
+      "room_id": "dining",
+      "parameter_patches": {
+        "width": {
+          "value": 6.2,
+          "confidence": 0.62,
+          "evidence": "The reference communal dining zone reads as the widest lower-floor gathering bay and needs slightly more horizontal breathing room."
+        },
+        "lantern_count": {
+          "value": 3,
+          "confidence": 0.75,
+          "evidence": "The reference dining area contains multiple warm pools across the long table zone; the current rendering is still too evenly dark."
+        },
+        "occupancy": {
+          "value": 8,
+          "confidence": 0.86,
+          "evidence": "The reference meal composition is crowded enough to justify the maximum current environment place-setting/seat density even though NPC meshes are excluded."
+        },
+        "clutter": {
+          "value": 0.98,
+          "confidence": 0.94,
+          "evidence": "The generated dining bay is still materially emptier than the reference, which layers stools, bowls, plates, jars, cupboards, serving items, and wall storage."
+        }
+      }
+    }
+  ],
+  "template_gaps": [
+    {
+      "scope": "all_rooms",
+      "capability": "vertical_storage_and_shelving",
+      "severity": 0.94,
+      "evidence": "The reference is dominated by tall shelves, cubbies, cupboards, scroll/book storage, and wall-mounted vertical organization; the current DSL mostly places small floor or single-row containers.",
+      "recommendation": "Add reusable tall-shelf, drawer-cabinet, cubby-wall, and stocked-shelf macros to room factories with bounded density parameters."
+    },
+    {
+      "scope": "kitchen",
+      "capability": "hearth_fire_hanging_cookware",
+      "severity": 0.97,
+      "evidence": "The reference kitchen has a visible fire, steam, suspended cookware, hanging utensils, stacked pots, baskets, and ingredients; the current template only expresses a static hearth, pot, bench, and small containers.",
+      "recommendation": "Add deterministic hearth-fire emissive geometry, steam proxy, hanging-rack macro, cookware clusters, and ingredient basket sets."
+    },
+    {
+      "scope": "infirmary",
+      "capability": "curtains_bedding_and_care_props",
+      "severity": 0.86,
+      "evidence": "The reference rest area uses curtains, layered bedding, side storage, cloth drapes, and medical objects to create a recognizable care space; the current bed remains box-like and under-articulated.",
+      "recommendation": "Add curtain planes, folded-cloth stacks, pillow/blanket modules, side-table sets, and medicine-board macros."
+    },
+    {
+      "scope": "population_layer",
+      "capability": "character_silhouette_slots",
+      "severity": 0.98,
+      "evidence": "A large share of the mother image's visual identity comes from people cooking, eating, resting, guarding, and working. Environment-only occupancy metadata cannot reproduce this silhouette rhythm.",
+      "recommendation": "Create a separate character-slot/population pass that places game-character proxies or engine-side NPC instances without baking characters into environment GLBs."
+    },
+    {
+      "scope": "architecture",
+      "capability": "wuxia_structural_ornament",
+      "severity": 0.83,
+      "evidence": "Columns, stone capitals, carved brackets, distressed beams, door frames, railings, and roof-edge language in the reference are much richer than current rectangular structural primitives.",
+      "recommendation": "Add stylized timber bracket, column-cap, carved lintel, railing, stone-base, and weathering macros as Style-DNA-controlled modules."
+    },
+    {
+      "scope": "environment",
+      "capability": "mist_bamboo_and_mountain_backdrop",
+      "severity": 0.79,
+      "evidence": "The reference derives much of its mood from cool mountain mist, bamboo silhouettes, moonlight, and layered cliff scenery, which are absent from the current asset-only render.",
+      "recommendation": "Keep these out of room geometry and add a separate environment-stage preset for fog cards/volume, bamboo clusters, moon fill, and distant cliff layers."
+    }
+  ],
+  "summary": "The compiler has captured the horizontal cutaway and basic four-room semantics, but the render remains far below the mother image in semantic density, vertical storage, character-driven silhouette rhythm, architectural ornament, and environment atmosphere. Apply the small bounded density/light/platform corrections, then treat the remaining high-severity findings as factory capability work rather than further scalar tuning."
+}
