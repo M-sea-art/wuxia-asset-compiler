@@ -5,7 +5,8 @@
 > The goal is not to ask an AI to reinvent a Blender scene from scratch every time.  
 > The goal is to turn visual intent into a bounded specification, compile it through reusable world rules, validate the result, and keep every improvement as a reusable capability.
 
-📖 **中文项目宗旨与理念：[`docs/PROJECT_PHILOSOPHY.zh-CN.md`](docs/PROJECT_PHILOSOPHY.zh-CN.md)**
+📖 **中文项目宗旨与理念：[`docs/PROJECT_PHILOSOPHY.zh-CN.md`](docs/PROJECT_PHILOSOPHY.zh-CN.md)**  
+🧩 **Codex Skills / Plugin 集成说明：[`docs/CODEX_SKILLS_PLUGIN.zh-CN.md`](docs/CODEX_SKILLS_PLUGIN.zh-CN.md)**
 
 ---
 
@@ -40,6 +41,44 @@ Godot / other game engines
 ```
 
 The project deliberately avoids making expensive image-to-3D inference the permanent default production path. Image-to-3D systems can still be useful as **teachers, bootstrap tools, or reference generators**, but repeated production should increasingly come from reusable factories, modules, parameters, seeds, and style rules.
+
+---
+
+## Where Codex fits
+
+Codex is intended to be the **engineering agent and Skill host around the compiler**, not the geometry truth layer.
+
+```text
+                         ┌──────────────────────────────┐
+                         │        Codex + Skills         │
+                         │ engineering / orchestration   │
+                         └──────────────┬───────────────┘
+                                        │
+                  ┌─────────────────────┼─────────────────────┐
+                  │                     │                     │
+                  v                     v                     v
+          operate workflows      implement template     tests / CI / PR
+                                      gaps
+                  │                     │                     │
+                  └─────────────────────┼─────────────────────┘
+                                        v
+Reference -> Spec -> Factory / Macro -> Blender -> QA -> Validation -> GLB
+```
+
+A future Wuxia Asset Compiler plugin should package **small, composable Skills** around stable compiler operations, for example:
+
+- `wuxia-reference-analysis`
+- `wuxia-resolve-spec`
+- `wuxia-compile-asset`
+- `wuxia-visual-qa`
+- `wuxia-repair-asset`
+- `wuxia-template-gap-engineer`
+- `wuxia-asset-validator`
+- `wuxia-godot-import-smoke`
+
+The normal Codex interface should be high-level CLI / typed tool / MCP operations. **Unlimited arbitrary `bpy` execution is an engineering escape hatch, not the production agent API.**
+
+`AGENTS.md` defines repository-wide doctrine and engineering constraints. Skills should define how a specific repeatable workflow is executed. See the dedicated Codex integration document for the proposed plugin structure and official OpenAI references.
 
 ---
 
@@ -159,6 +198,10 @@ tools/
   resolve_reference.py    # reference analysis → Scene Spec
   apply_visual_review.py  # QA review → repaired Scene Spec
 
+docs/
+  PROJECT_PHILOSOPHY.zh-CN.md
+  CODEX_SKILLS_PLUGIN.zh-CN.md
+
 examples/                 # specs, analyses, and captured QA fixtures
 schema/                   # JSON Schemas
 tests/                    # zero-dependency compiler contract tests
@@ -237,19 +280,20 @@ When a reference does not match the render, ask in this order:
 4. **Is the Style DNA incomplete?** → extend the style system.
 5. Only use free-form Blender scripting as a narrow engineering escape hatch, not the normal agent interface.
 
-This rule is intended to make every iteration accumulate reusable capability instead of accumulating prompt debt.
+When Codex is doing the work, the same rule applies: it should improve the compiler abstraction rather than solving every task by generating increasingly unconstrained Blender code.
 
 ---
 
 ## Near-term roadmap
 
+- package the first Codex Skill set for reference → resolve → compile → QA → repair → validate;
+- define a plugin boundary for optional GitHub / Blender MCP / engine integrations;
 - character-slot population pass with Blender QA proxies and engine spawn metadata;
 - infirmary cloth / bedding / care-prop macros;
 - wuxia structural ornament and railing / bracket language;
 - atmospheric staging with mist, bamboo, moon fill, and distant mountain layers;
 - richer Style DNA contracts;
 - GLB post-export validation and Godot import smoke tests;
-- higher-level MCP / agent workflows around stable compiler operations;
 - additional factory families for roofs, halls, gates, bridges, cliffs, vegetation, roads, and full sect compounds.
 
 ---
@@ -260,4 +304,6 @@ The long-term target is not “generate one building.”
 
 It is a reusable **eastern-fantasy world asset compiler** capable of turning art direction into coherent families of sect gates, cliff dwellings, kitchens, apothecaries, bridges, bamboo groves, mountain paths, villages, and eventually full compounds and settlements.
 
-**Let AI understand the world. Let templates preserve its rules. Let Blender compile those rules into spaces a game can actually use.**
+Codex should help maintain and grow that compiler as an AI software engineer: operate stable workflows, turn template gaps into tested capabilities, and keep the repository healthy. Blender remains the geometry executor; the compiler remains the contract; validation remains the truth layer.
+
+**Let AI understand the world. Let templates preserve its rules. Let Blender compile those rules into spaces a game can actually use. Let Codex keep improving the language that describes that world.**
