@@ -14,11 +14,16 @@ jobs:
           python-version: "3.11"
       - name: Run scene-spec contract tests
         run: python tests/test_scene_spec.py
+      - name: Run reference-analyzer contract tests
+        run: python tests/test_reference_analyzer.py
       - name: Compile Python sources
         run: >-
           python -m py_compile
           compiler/spec.py
+          compiler/templates.py
+          analyzer/reference.py
           blender/build_asset.py
           blender/factories.py
           blender/validation.py
           tests/test_scene_spec.py
+          tests/test_reference_analyzer.py
