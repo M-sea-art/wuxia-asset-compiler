@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "factory": "cliff_kitchen",
+  "seed": 7,
+  "parameters": {
+    "width": 7.2,
+    "depth": 4.8,
+    "wall_height": 2.7,
+    "roof_pitch_deg": 31.0,
+    "eave_overhang": 0.72,
+    "platform_height": 0.9,
+    "cliff_embed": 0.35,
+    "stone_step_count": 9,
+    "post_count_x": 4,
+    "wood_age": 0.62,
+    "tile_damage": 0.16,
+    "moss": 0.18
+  },
+  "style": {
+    "palette": "paper_ink_old_wood",
+    "roof": "dark_clay_tile",
+    "wood": "aged_dark_timber"
+  }
+}
