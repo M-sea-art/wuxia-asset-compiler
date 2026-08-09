@@ -13,8 +13,9 @@ jobs:
       - name: Install Blender and headless graphics runtime
         run: |
           sudo apt-get update
-          sudo apt-get install -y blender libegl1 libgl1-mesa-dri libglx-mesa0
+          sudo apt-get install -y blender libegl1 libgl1-mesa-dri libglx-mesa0 python3-numpy
           blender --version
+          blender --background --python-expr "import sys; print('BLENDER_PYTHON', sys.version); print('BLENDER_PATHS', sys.path); import numpy; print('NUMPY', numpy.__version__)"
 
       - name: Compile cliff kitchen
         run: |
