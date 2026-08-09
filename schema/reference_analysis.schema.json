@@ -15,7 +15,10 @@
   ],
   "properties": {
     "analysis_version": {"type": "integer", "const": 1},
-    "factory_candidate": {"type": "string", "enum": ["cliff_kitchen"]},
+    "factory_candidate": {
+      "type": "string",
+      "enum": ["cliff_ground_floor", "cliff_kitchen"]
+    },
     "factory_confidence": {"type": "number", "minimum": 0.0, "maximum": 1.0},
     "camera": {
       "type": "object",
