@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import json
 import math
 import os
 import sys
@@ -13,10 +12,14 @@ import bpy
 from mathutils import Vector
 
 THIS_DIR = Path(__file__).resolve().parent
-if str(THIS_DIR) not in sys.path:
-    sys.path.insert(0, str(THIS_DIR))
+REPO_ROOT = THIS_DIR.parent
+for path in (REPO_ROOT, THIS_DIR):
+    if str(path) not in sys.path:
+        sys.path.insert(0, str(path))
 
+from compiler.spec import load_spec  # noqa: E402
 from factories import build_cliff_kitchen  # noqa: E402
+from validation import collect_scene_report, write_report  # noqa: E402
 
 
 FACTORIES = {
@@ -24,15 +27,7 @@ FACTORIES = {
 }
 
 
-PARAM_RANGES = {
-    "width": (3.0, 20.0),
-    "depth": (2.5, 14.0),
-    "wall_height": (2.0, 6.0),
-    "roof_pitch_deg": (15.0, 55.0),
-    "eave_overhang": (0.2, 2.0),
-    "platform_height": (0.2, 4.0),
-    "cliff_embed": (0.0, 1.0),
-}
+VIEW_AZIMUTHS = (45, 135, 225, 315)
 
 
 def parse_args() -> argparse.Namespace:
@@ -41,33 +36,18 @@ def parse_args() -> argparse.Namespace:
         argv = argv[argv.index("--") + 1:]
     else:
         argv = []
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--spec", required=True)
     parser.add_argument("--out", required=True)
-    parser.add_argument("--preview")
+    parser.add_argument("--preview", help="Render one canonical 45-degree preview")
+    parser.add_argument(
+        "--preview-dir",
+        help="Render four fixed QA views at 45/135/225/315 degrees",
+    )
+    parser.add_argument("--report", help="Write deterministic validation JSON")
+    parser.add_argument("--triangle-budget", type=int, default=50_000)
     return parser.parse_args(argv)
-
-
-def validate_spec(spec: dict) -> None:
-    if spec.get("version") != 1:
-        raise ValueError("Only scene spec version 1 is supported")
-    factory = spec.get("factory")
-    if factory not in FACTORIES:
-        raise ValueError(f"Unsupported factory: {factory!r}")
-    if not isinstance(spec.get("seed"), int) or spec["seed"] < 0:
-        raise ValueError("seed must be a non-negative integer")
-    parameters = spec.get("parameters")
-    if not isinstance(parameters, dict):
-        raise ValueError("parameters must be an object")
-    for key, (lo, hi) in PARAM_RANGES.items():
-        if key not in parameters:
-            raise ValueError(f"Missing parameter: {key}")
-        value = float(parameters[key])
-        if not lo <= value <= hi:
-            raise ValueError(f"{key}={value} is outside [{lo}, {hi}]")
-    steps = parameters.get("stone_step_count")
-    if not isinstance(steps, int) or not 3 <= steps <= 30:
-        raise ValueError("stone_step_count must be an integer in [3, 30]")
 
 
 def clear_scene() -> None:
@@ -84,24 +64,35 @@ def clear_scene() -> None:
                 datablocks.remove(block)
 
 
-def aim_object_at(obj, target=(0.0, 0.0, 1.5)) -> None:
-    direction = Vector(target) - obj.location
+def aim_object_at(obj, target: Vector) -> None:
+    direction = target - obj.location
     obj.rotation_euler = direction.to_track_quat("-Z", "Y").to_euler()
 
 
-def setup_camera_and_lighting(spec: dict) -> None:
+def position_camera(camera, target: Vector, radius: float, azimuth_deg: float) -> None:
+    azimuth = math.radians(azimuth_deg)
+    camera.location = (
+        target.x + math.cos(azimuth) * radius,
+        target.y + math.sin(azimuth) * radius,
+        target.z + radius * 0.72,
+    )
+    aim_object_at(camera, target)
+
+
+def setup_camera_and_lighting(spec: dict):
     parameters = spec["parameters"]
     width = float(parameters["width"])
     depth = float(parameters["depth"])
     height = float(parameters["platform_height"]) + float(parameters["wall_height"])
-    radius = max(width, depth) * 1.6
+    orbit_radius = max(width, depth) * 2.0
+    target = Vector((0.0, 0.0, height * 0.55))
 
-    bpy.ops.object.camera_add(location=(radius, radius, height + radius * 0.72))
+    bpy.ops.object.camera_add()
     camera = bpy.context.object
     camera.name = "PreviewCamera"
     camera.data.type = "ORTHO"
     camera.data.ortho_scale = max(width, depth) * 1.72
-    aim_object_at(camera, (0.0, 0.0, height * 0.55))
+    position_camera(camera, target, orbit_radius, 45)
     bpy.context.scene.camera = camera
 
     bpy.ops.object.light_add(type="SUN", location=(0.0, 0.0, height + 8.0))
@@ -116,14 +107,14 @@ def setup_camera_and_lighting(spec: dict) -> None:
 
     bpy.ops.object.light_add(
         type="AREA",
-        location=(-radius * 0.5, radius * 0.3, height + radius * 0.8),
+        location=(-orbit_radius * 0.35, orbit_radius * 0.25, height + orbit_radius * 0.45),
     )
     area = bpy.context.object
     area.name = "SoftFill"
     area.data.energy = 650.0
     area.data.shape = "DISK"
     area.data.size = max(width, depth) * 0.9
-    aim_object_at(area, (0.0, 0.0, height * 0.5))
+    aim_object_at(area, target)
 
     world = bpy.context.scene.world or bpy.data.worlds.new("WuxiaWorld")
     bpy.context.scene.world = world
@@ -132,6 +123,8 @@ def setup_camera_and_lighting(spec: dict) -> None:
     if background:
         background.inputs["Color"].default_value = (0.055, 0.052, 0.047, 1.0)
         background.inputs["Strength"].default_value = 0.45
+
+    return camera, target, orbit_radius
 
 
 def configure_render() -> None:
@@ -153,24 +146,54 @@ def ensure_parent(path: str) -> str:
     return absolute
 
 
+def render_preview(path: str, camera, target: Vector, radius: float, azimuth: float) -> str:
+    absolute = ensure_parent(path)
+    position_camera(camera, target, radius, azimuth)
+    bpy.context.scene.render.filepath = absolute
+    bpy.ops.render.render(write_still=True)
+    print(f"[WuxiaAssetCompiler] preview[{azimuth}]={absolute}")
+    return absolute
+
+
+def render_qa_views(directory: str, camera, target: Vector, radius: float) -> list[str]:
+    absolute_dir = os.path.abspath(directory)
+    os.makedirs(absolute_dir, exist_ok=True)
+    outputs: list[str] = []
+    for azimuth in VIEW_AZIMUTHS:
+        output = os.path.join(absolute_dir, f"view_{azimuth:03d}.png")
+        outputs.append(render_preview(output, camera, target, radius, azimuth))
+    return outputs
+
+
 def main() -> None:
     args = parse_args()
-    spec_path = os.path.abspath(args.spec)
-    with open(spec_path, "r", encoding="utf-8") as handle:
-        spec = json.load(handle)
+    spec = load_spec(os.path.abspath(args.spec))
 
-    validate_spec(spec)
+    if spec["factory"] not in FACTORIES:
+        raise RuntimeError(f"No Blender implementation registered for {spec['factory']!r}")
+
     clear_scene()
     configure_render()
 
     FACTORIES[spec["factory"]](spec)
-    setup_camera_and_lighting(spec)
+    camera, target, orbit_radius = setup_camera_and_lighting(spec)
 
     if args.preview:
-        preview_path = ensure_parent(args.preview)
-        bpy.context.scene.render.filepath = preview_path
-        bpy.ops.render.render(write_still=True)
-        print(f"[WuxiaAssetCompiler] preview={preview_path}")
+        render_preview(args.preview, camera, target, orbit_radius, 45)
+    if args.preview_dir:
+        render_qa_views(args.preview_dir, camera, target, orbit_radius)
+
+    report = collect_scene_report(spec, triangle_budget=args.triangle_budget)
+    if args.report:
+        report_path = write_report(args.report, report)
+        print(f"[WuxiaAssetCompiler] report={report_path}")
+
+    print(
+        "[WuxiaAssetCompiler] validation="
+        f"{report['status']} triangles={report['metrics']['triangles']}"
+    )
+    if report["status"] != "pass":
+        raise RuntimeError("Asset validation failed: " + "; ".join(report["failures"]))
 
     out_path = ensure_parent(args.out)
     bpy.ops.export_scene.gltf(
