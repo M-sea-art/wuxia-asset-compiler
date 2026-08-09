@@ -83,6 +83,7 @@ jobs:
           tools/apply_visual_review.py
           blender/build_asset.py
           blender/primitives.py
+          blender/prop_macros.py
           blender/room_factories.py
           blender/factories.py
           blender/ground_floor_factory.py
