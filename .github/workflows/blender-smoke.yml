@@ -10,10 +10,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Blender
+      - name: Install Blender and headless graphics runtime
         run: |
           sudo apt-get update
-          sudo apt-get install -y blender
+          sudo apt-get install -y blender libegl1 libgl1-mesa-dri libglx-mesa0
           blender --version
 
       - name: Compile cliff kitchen
