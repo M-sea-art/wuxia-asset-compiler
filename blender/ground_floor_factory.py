@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from typing import Any
 
+import bpy
+
 from factories import (
     _add_room_boundary_frame,
     _add_stone_steps,
@@ -16,6 +18,18 @@ from factories import (
 )
 from primitives import add_box, add_rock
 from room_factories import ROOM_FACTORIES
+
+
+def _add_room_light(center_x: float, depth: float, z0: float, wall_height: float, lantern_count: int) -> None:
+    bpy.ops.object.light_add(
+        type="POINT",
+        location=(center_x, depth * 0.05, z0 + wall_height * 0.68),
+    )
+    light = bpy.context.object
+    light.name = "RoomLanternLight"
+    light.data.energy = 120.0 + 45.0 * max(1, lantern_count)
+    light.data.color = (1.0, 0.48, 0.18)
+    light.data.shadow_soft_size = 1.15
 
 
 def build_cliff_ground_floor(spec: dict[str, Any]):
@@ -86,6 +100,13 @@ def build_cliff_ground_floor(spec: dict[str, Any]):
             z0,
             wall_height,
             materials,
+        )
+        _add_room_light(
+            center_x,
+            depth,
+            z0,
+            wall_height,
+            int(room.get("lantern_count", 1)),
         )
 
     _add_stone_steps(width, depth, z0, step_count, materials["stone"])
