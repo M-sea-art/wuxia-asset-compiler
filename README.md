@@ -7,31 +7,36 @@ reference image
     -> vision / scene spec
     -> style DNA + factory selection
     -> deterministic Blender generation
-    -> preview + validation
+    -> multi-view preview + deterministic validation
     -> GLB
     -> game engine import
 ```
 
 The project deliberately avoids making image-to-3D inference the default production path. A vision model should emit a compact, bounded `scene_spec.json`; deterministic Blender factories, Geometry Nodes, and reusable modules turn that specification into game-ready geometry.
 
-## Current milestone: PoC-0
+The LLM should **not** generate hundreds of lines of ad-hoc `bpy` for every asset. Visual variety should come from factories, modules, seeds, bounded parameters, and a style-DNA layer.
+
+## Current milestone
 
 - One asset family: `cliff_kitchen`
-- Versioned scene-spec contract
+- Versioned JSON Schema plus executable pure-Python contract
+- Deterministic normalization of optional parameters
 - Deterministic Blender Python factory
 - Reusable materials and primitive modules
-- Fixed isometric preview camera and lighting
-- GLB export entry point
-- Zero-dependency scene-spec smoke test
-
-The LLM should **not** generate hundreds of lines of ad-hoc `bpy` for every asset. Visual variety should come from factories, modules, seeds, bounded parameters, and later a style-DNA layer.
+- One canonical preview or four fixed QA views
+- Blender-side topology/transform/material/triangle validation report
+- GLB export only after hard validation checks pass
+- Zero-dependency scene-spec contract tests
 
 ## Repository layout
 
 ```text
+compiler/
+  spec.py
 blender/
   build_asset.py
   factories.py
+  validation.py
 examples/
   cliff_kitchen.scene_spec.json
 schema/
@@ -48,16 +53,24 @@ From the repository root:
 blender --background --python blender/build_asset.py -- `
   --spec examples/cliff_kitchen.scene_spec.json `
   --out build/cliff_kitchen.glb `
-  --preview build/cliff_kitchen.png
+  --preview build/cliff_kitchen.png `
+  --preview-dir build/cliff_kitchen_views `
+  --report build/cliff_kitchen.validation.json
 ```
+
+`--preview-dir` renders fixed views at 45°, 135°, 225°, and 315°. These are intended to become the visual QA inputs for a reference-comparison agent.
+
+The validation report currently records mesh/object counts, vertices, polygons, triangles, world bounds, non-manifold edges, zero-area faces, material-slot warnings, unapplied/negative scale, and triangle-budget warnings. Hard geometry failures stop GLB export.
 
 On macOS/Linux, use `\` instead of PowerShell backticks for line continuation.
 
-## Validate the example spec without Blender
+## Validate the scene-spec contract without Blender
 
 ```bash
 python tests/test_scene_spec.py
 ```
+
+The test verifies the example, normalization defaults, rejection of invalid/unknown parameters, and drift between the JSON Schema and executable runtime contract.
 
 ## Target architecture
 
@@ -79,10 +92,13 @@ Scene Spec / Asset DSL
         (typed tools / Geometry Nodes / Python)
                |
                v
-        Multi-view preview capture
+        Four-view preview capture
                |
                v
         Vision-assisted comparison
+               |
+               v
+        Parameter patch
                |
                v
         Deterministic validation
@@ -97,9 +113,8 @@ Scene Spec / Asset DSL
 ## Near-term roadmap
 
 1. Reference image -> `scene_spec.json` analyzer contract.
-2. Four fixed preview views and parameter-only visual repair loop.
-3. Deterministic geometry, topology, transform, material, and GLB validation.
-4. Godot import smoke test.
-5. MCP macro tools such as `build_wuxia_asset`, `patch_asset_parameters`, and `validate_wuxia_asset`.
-6. Factory families for roofs, timber halls, stone stairs, bridges, cliffs, vegetation, sect gates, and production buildings.
-7. Style-DNA presets for coherent world-scale asset generation.
+2. Parameter-only visual repair loop using the four fixed views.
+3. GLB post-export validation and Godot import smoke test.
+4. MCP macro tools such as `build_wuxia_asset`, `patch_asset_parameters`, and `validate_wuxia_asset`.
+5. Factory families for roofs, timber halls, stone stairs, bridges, cliffs, vegetation, sect gates, and production buildings.
+6. Style-DNA presets for coherent world-scale asset generation.
