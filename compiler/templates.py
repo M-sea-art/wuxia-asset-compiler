@@ -37,6 +37,60 @@ _FACTORY_BASE_SPECS: dict[str, dict[str, Any]] = {
             "wood": "aged_dark_timber",
         },
     },
+    "cliff_ground_floor": {
+        "version": 1,
+        "factory": "cliff_ground_floor",
+        "seed": 0,
+        "parameters": {
+            "width": 20.0,
+            "depth": 5.2,
+            "wall_height": 2.9,
+            "platform_height": 0.85,
+            "cliff_embed": 0.80,
+            "stone_step_count": 12,
+            "wood_age": 0.72,
+            "moss": 0.20,
+            "rooms": [
+                {
+                    "id": "gate",
+                    "template": "sect_gate_room",
+                    "width": 4.0,
+                    "lantern_count": 3,
+                    "occupancy": 2,
+                    "clutter": 0.42,
+                },
+                {
+                    "id": "infirmary",
+                    "template": "infirmary_rest_room",
+                    "width": 4.4,
+                    "lantern_count": 1,
+                    "occupancy": 2,
+                    "clutter": 0.48,
+                },
+                {
+                    "id": "kitchen",
+                    "template": "kitchen_room",
+                    "width": 5.0,
+                    "lantern_count": 1,
+                    "occupancy": 3,
+                    "clutter": 0.72,
+                },
+                {
+                    "id": "dining",
+                    "template": "dining_room",
+                    "width": 5.6,
+                    "lantern_count": 2,
+                    "occupancy": 6,
+                    "clutter": 0.68,
+                },
+            ],
+        },
+        "style": {
+            "palette": "paper_ink_old_wood",
+            "roof": "dark_clay_tile",
+            "wood": "aged_dark_timber",
+        },
+    },
 }
 
 
