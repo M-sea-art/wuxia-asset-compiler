@@ -34,10 +34,11 @@ def build_cliff_ground_floor(spec: dict[str, Any]):
     )
 
     z0 = platform_height
+    # The cliff is scenery/support behind the cutaway, not a foreground boulder.
     add_rock(
         "GroundFloorCliffMass",
-        (-width * (0.26 + 0.18 * cliff_embed), -depth * 0.18, -0.8),
-        (width * 0.72, depth * 0.92, max(3.0, platform_height + 2.3)),
+        (-width * (0.30 + 0.15 * cliff_embed), -depth * 0.78, -1.05),
+        (width * 0.66, depth * 0.62, max(3.0, platform_height + 2.2)),
         materials["stone"],
         seed=seed + 301,
     )
