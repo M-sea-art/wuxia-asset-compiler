@@ -15,7 +15,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y blender libegl1 libgl1-mesa-dri libglx-mesa0 python3-numpy
           blender --version
-          blender --background --python-expr "import sys; print('BLENDER_PYTHON', sys.version); print('BLENDER_PATHS', sys.path); import numpy; print('NUMPY', numpy.__version__)"
+          blender --background --python-expr "import sys; print('BLENDER_PYTHON', sys.version); import numpy; print('NUMPY', numpy.__version__)"
 
       - name: Compile cliff kitchen
         run: |
@@ -26,28 +26,40 @@ jobs:
             --preview-dir build/cliff_kitchen_views \
             --report build/cliff_kitchen.validation.json
 
+      - name: Compile multi-room ground floor
+        run: |
+          blender --background --python blender/build_asset.py -- \
+            --spec examples/cliff_ground_floor.scene_spec.json \
+            --out build/cliff_ground_floor.glb \
+            --preview build/cliff_ground_floor.png \
+            --preview-dir build/cliff_ground_floor_views \
+            --report build/cliff_ground_floor.validation.json
+
       - name: Verify outputs
         run: |
           test -s build/cliff_kitchen.glb
           test -s build/cliff_kitchen.png
-          test -s build/cliff_kitchen_views/view_045.png
-          test -s build/cliff_kitchen_views/view_135.png
-          test -s build/cliff_kitchen_views/view_225.png
-          test -s build/cliff_kitchen_views/view_315.png
+          test -s build/cliff_ground_floor.glb
+          test -s build/cliff_ground_floor.png
+          test -s build/cliff_ground_floor_views/view_045.png
+          test -s build/cliff_ground_floor_views/view_135.png
+          test -s build/cliff_ground_floor_views/view_225.png
+          test -s build/cliff_ground_floor_views/view_315.png
           python - <<'PY'
           import json
           from pathlib import Path
 
-          report = json.loads(Path('build/cliff_kitchen.validation.json').read_text())
-          assert report['status'] == 'pass', report
-          assert report['metrics']['mesh_objects'] > 0, report
-          assert report['metrics']['triangles'] > 0, report
-          print(json.dumps(report, indent=2))
+          for stem in ('cliff_kitchen', 'cliff_ground_floor'):
+              report = json.loads(Path(f'build/{stem}.validation.json').read_text())
+              assert report['status'] == 'pass', report
+              assert report['metrics']['mesh_objects'] > 0, report
+              assert report['metrics']['triangles'] > 0, report
+              print(stem, json.dumps(report, indent=2))
           PY
 
-      - name: Upload compiled asset and QA views
+      - name: Upload compiled assets and QA views
         uses: actions/upload-artifact@v4
         with:
-          name: cliff-kitchen-smoke
+          name: wuxia-asset-smoke
           path: build/
           if-no-files-found: error
