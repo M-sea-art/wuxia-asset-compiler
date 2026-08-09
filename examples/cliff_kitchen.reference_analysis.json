@@ -1,0 +1,59 @@
+{
+  "analysis_version": 1,
+  "factory_candidate": "cliff_kitchen",
+  "factory_confidence": 0.91,
+  "camera": {
+    "projection": "orthographic_like",
+    "azimuth_deg": 42.0,
+    "elevation_deg": 36.0,
+    "confidence": 0.82
+  },
+  "parameter_estimates": {
+    "width": {
+      "value": 7.8,
+      "confidence": 0.84,
+      "evidence": "Four visible front post bays suggest a modest single-room span."
+    },
+    "depth": {
+      "value": 4.6,
+      "confidence": 0.69,
+      "evidence": "Roof depth and side platform proportion are visible from the elevated view."
+    },
+    "roof_pitch_deg": {
+      "value": 34.0,
+      "confidence": 0.76,
+      "evidence": "Both roof planes are visible and show a moderate pitch."
+    },
+    "stone_step_count": {
+      "value": 10,
+      "confidence": 0.88,
+      "evidence": "Individual stone stair treads can be counted in the reference."
+    },
+    "wood_age": {
+      "value": 0.72,
+      "confidence": 0.55,
+      "evidence": "Timber appears dark and weathered rather than freshly finished."
+    },
+    "moss": {
+      "value": 0.3,
+      "confidence": 0.2,
+      "evidence": "Possible green-grey cliff variation is visible but moss cannot be isolated confidently."
+    }
+  },
+  "observations": [
+    {
+      "subject": "composition",
+      "statement": "A compact timber kitchen/work shelter occupies a stone platform against a cliff mass.",
+      "confidence": 0.93
+    },
+    {
+      "subject": "access",
+      "statement": "A narrow flight of stone steps connects the exposed platform edge to lower terrain.",
+      "confidence": 0.9
+    }
+  ],
+  "uncertainties": [
+    "The rear wall is partly occluded by the roof and cliff.",
+    "Surface weathering cannot be separated reliably from low-saturation lighting."
+  ]
+}
