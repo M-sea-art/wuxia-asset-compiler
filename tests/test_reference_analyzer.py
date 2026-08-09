@@ -49,10 +49,11 @@ def test_kitchen_resolution_accepts_confident_estimates_and_keeps_uncertain_defa
     moss_decision = next(item for item in report["decisions"] if item["parameter"] == "moss")
     assert moss_decision["accepted"] is False
     assert "below threshold" in moss_decision["reason"]
+    assert report["room_decisions"] == []
     normalize_spec(spec)
 
 
-def test_ground_floor_reference_resolves_against_room_template() -> None:
+def test_ground_floor_reference_resolves_global_and_room_estimates() -> None:
     analysis = load_fixture(GROUND_FLOOR_FIXTURE)
     spec, report = resolve_reference_analysis(analysis, seed=23, minimum_confidence=0.35)
 
@@ -62,16 +63,28 @@ def test_ground_floor_reference_resolves_against_room_template() -> None:
     assert spec["parameters"]["depth"] == 5.4
     assert spec["parameters"]["wall_height"] == 3.05
     assert spec["parameters"]["wood_age"] == 0.82
-    assert len(spec["parameters"]["rooms"]) == 4
+
+    rooms = {room["id"]: room for room in spec["parameters"]["rooms"]}
+    assert rooms["gate"]["width"] == 3.8
+    assert rooms["gate"]["clutter"] == 0.72
+    assert rooms["infirmary"]["width"] == 4.2
+    assert rooms["infirmary"]["clutter"] == 0.82
+    assert rooms["kitchen"]["width"] == 5.6
+    assert rooms["kitchen"]["lantern_count"] == 2
+    assert rooms["kitchen"]["clutter"] == 0.96
+    assert rooms["dining"]["width"] == 6.0
+    assert rooms["dining"]["occupancy"] == 7
+    assert rooms["dining"]["clutter"] == 0.92
+
     assert [room["template"] for room in spec["parameters"]["rooms"]] == [
         "sect_gate_room",
         "infirmary_rest_room",
         "kitchen_room",
         "dining_room",
     ]
+    assert len(report["room_decisions"]) == 16
+    assert all(item["accepted"] for item in report["room_decisions"])
 
-    # The model noticed a roof pitch in the full mother image, but this selected slice
-    # does not own roof geometry. The resolver must record and reject that observation.
     roof_decision = next(
         item for item in report["decisions"] if item["parameter"] == "roof_pitch_deg"
     )
@@ -79,6 +92,29 @@ def test_ground_floor_reference_resolves_against_room_template() -> None:
     assert "does not own parameter" in roof_decision["reason"]
     assert roof_decision["resolved_value"] is None
     normalize_spec(spec)
+
+
+def test_room_patch_for_unknown_room_is_rejected_without_mutating_template() -> None:
+    analysis = load_fixture(GROUND_FLOOR_FIXTURE)
+    analysis["room_estimates"].append(
+        {
+            "room_id": "invented_secret_room",
+            "parameter_estimates": {
+                "clutter": {
+                    "value": 1.0,
+                    "confidence": 0.99,
+                    "evidence": "Test-only invented room.",
+                }
+            },
+        }
+    )
+    spec, report = resolve_reference_analysis(analysis)
+    assert all(room["id"] != "invented_secret_room" for room in spec["parameters"]["rooms"])
+    decision = next(
+        item for item in report["room_decisions"] if item["room_id"] == "invented_secret_room"
+    )
+    assert decision["accepted"] is False
+    assert "no room id" in decision["reason"]
 
 
 def test_out_of_range_estimate_is_rejected_not_clamped() -> None:
@@ -113,12 +149,20 @@ def test_unknown_model_field_is_rejected() -> None:
 def test_schema_lists_same_factories_as_templates() -> None:
     schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
     assert set(schema["properties"]["factory_candidate"]["enum"]) == set(supported_templates())
+    room_properties = schema["properties"]["room_estimates"]["items"]["properties"]
+    assert set(room_properties["parameter_estimates"]["properties"]) == {
+        "width",
+        "lantern_count",
+        "occupancy",
+        "clutter",
+    }
 
 
 def main() -> None:
     test_fixtures_validate()
     test_kitchen_resolution_accepts_confident_estimates_and_keeps_uncertain_defaults()
-    test_ground_floor_reference_resolves_against_room_template()
+    test_ground_floor_reference_resolves_global_and_room_estimates()
+    test_room_patch_for_unknown_room_is_rejected_without_mutating_template()
     test_out_of_range_estimate_is_rejected_not_clamped()
     test_unknown_model_field_is_rejected()
     test_schema_lists_same_factories_as_templates()
