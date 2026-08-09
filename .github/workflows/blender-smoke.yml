@@ -17,7 +17,7 @@ jobs:
           blender --version
           blender --background --python-expr "import sys; print('BLENDER_PYTHON', sys.version); import numpy; print('NUMPY', numpy.__version__)"
 
-      - name: Compile cliff kitchen
+      - name: Compile cliff kitchen regression target
         run: |
           blender --background --python blender/build_asset.py -- \
             --spec examples/cliff_kitchen.scene_spec.json \
@@ -26,40 +26,56 @@ jobs:
             --preview-dir build/cliff_kitchen_views \
             --report build/cliff_kitchen.validation.json
 
-      - name: Compile multi-room ground floor
+      - name: Resolve uploaded mother-image analysis
+        run: |
+          python3 tools/resolve_reference.py \
+            --analysis examples/cliff_ground_floor.reference_analysis.json \
+            --out build/reference/cliff_ground_floor.scene_spec.json \
+            --report build/reference/cliff_ground_floor.resolution.json \
+            --seed 23 \
+            --minimum-confidence 0.35
+
+      - name: Compile reference-derived multi-room ground floor
         run: |
           blender --background --python blender/build_asset.py -- \
-            --spec examples/cliff_ground_floor.scene_spec.json \
-            --out build/cliff_ground_floor.glb \
-            --preview build/cliff_ground_floor.png \
-            --preview-dir build/cliff_ground_floor_views \
-            --report build/cliff_ground_floor.validation.json
+            --spec build/reference/cliff_ground_floor.scene_spec.json \
+            --out build/cliff_ground_floor_from_reference.glb \
+            --preview build/cliff_ground_floor_from_reference.png \
+            --preview-dir build/cliff_ground_floor_from_reference_views \
+            --report build/cliff_ground_floor_from_reference.validation.json
 
       - name: Verify outputs
         run: |
           test -s build/cliff_kitchen.glb
           test -s build/cliff_kitchen.png
-          test -s build/cliff_ground_floor.glb
-          test -s build/cliff_ground_floor.png
-          test -s build/cliff_ground_floor_views/view_045.png
-          test -s build/cliff_ground_floor_views/view_135.png
-          test -s build/cliff_ground_floor_views/view_225.png
-          test -s build/cliff_ground_floor_views/view_315.png
-          python - <<'PY'
+          test -s build/reference/cliff_ground_floor.scene_spec.json
+          test -s build/reference/cliff_ground_floor.resolution.json
+          test -s build/cliff_ground_floor_from_reference.glb
+          test -s build/cliff_ground_floor_from_reference.png
+          test -s build/cliff_ground_floor_from_reference_views/view_045.png
+          test -s build/cliff_ground_floor_from_reference_views/view_135.png
+          test -s build/cliff_ground_floor_from_reference_views/view_225.png
+          test -s build/cliff_ground_floor_from_reference_views/view_315.png
+          python3 - <<'PY'
           import json
           from pathlib import Path
 
-          for stem in ('cliff_kitchen', 'cliff_ground_floor'):
-              report = json.loads(Path(f'build/{stem}.validation.json').read_text())
-              assert report['status'] == 'pass', report
-              assert report['metrics']['mesh_objects'] > 0, report
-              assert report['metrics']['triangles'] > 0, report
-              print(stem, json.dumps(report, indent=2))
+          kitchen = json.loads(Path('build/cliff_kitchen.validation.json').read_text())
+          derived = json.loads(Path('build/cliff_ground_floor_from_reference.validation.json').read_text())
+          resolution = json.loads(Path('build/reference/cliff_ground_floor.resolution.json').read_text())
+          assert kitchen['status'] == 'pass', kitchen
+          assert derived['status'] == 'pass', derived
+          assert derived['metrics']['mesh_objects'] > 0, derived
+          assert derived['metrics']['triangles'] > 0, derived
+          assert any(item['accepted'] for item in resolution['decisions'])
+          assert any(not item['accepted'] for item in resolution['decisions'])
+          print('reference-derived validation', json.dumps(derived, indent=2))
+          print('resolution decisions', json.dumps(resolution, indent=2))
           PY
 
-      - name: Upload compiled assets and QA views
+      - name: Upload compiled assets, resolver outputs, and QA views
         uses: actions/upload-artifact@v4
         with:
-          name: wuxia-asset-smoke
+          name: reference-to-spec-smoke
           path: build/
           if-no-files-found: error
