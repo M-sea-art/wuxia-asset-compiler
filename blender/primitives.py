@@ -53,13 +53,69 @@ def add_box(name: str, location, dimensions, material=None, rotation=(0.0, 0.0, 
     return obj
 
 
-def add_cylinder(name: str, location, radius: float, depth: float, material=None):
-    bpy.ops.mesh.primitive_cylinder_add(vertices=12, radius=radius, depth=depth, location=location)
+def add_cylinder(
+    name: str,
+    location,
+    radius: float,
+    depth: float,
+    material=None,
+    rotation=(0.0, 0.0, 0.0),
+    vertices: int = 12,
+):
+    bpy.ops.mesh.primitive_cylinder_add(
+        vertices=vertices,
+        radius=radius,
+        depth=depth,
+        location=location,
+        rotation=rotation,
+    )
     obj = bpy.context.object
     obj.name = name
     if material is not None:
         obj.data.materials.append(material)
     return obj
+
+
+def add_cone(
+    name: str,
+    location,
+    radius1: float,
+    radius2: float,
+    depth: float,
+    material=None,
+    rotation=(0.0, 0.0, 0.0),
+    vertices: int = 10,
+):
+    bpy.ops.mesh.primitive_cone_add(
+        vertices=vertices,
+        radius1=radius1,
+        radius2=radius2,
+        depth=depth,
+        location=location,
+        rotation=rotation,
+    )
+    obj = bpy.context.object
+    obj.name = name
+    if material is not None:
+        obj.data.materials.append(material)
+    return obj
+
+
+def add_point_light(
+    name: str,
+    location,
+    *,
+    energy: float,
+    color=(1.0, 0.45, 0.12),
+    radius: float = 0.55,
+):
+    bpy.ops.object.light_add(type="POINT", location=location)
+    light = bpy.context.object
+    light.name = name
+    light.data.energy = energy
+    light.data.color = color
+    light.data.shadow_soft_size = radius
+    return light
 
 
 def add_rock(name: str, location, scale, material, seed: int):
