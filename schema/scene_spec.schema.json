@@ -7,17 +7,36 @@
   "required": ["version", "factory", "seed", "parameters", "style"],
   "properties": {
     "version": {"type": "integer", "const": 1},
-    "factory": {"type": "string", "enum": ["cliff_kitchen"]},
+    "factory": {"type": "string", "enum": ["cliff_kitchen", "cliff_ground_floor"]},
     "seed": {"type": "integer", "minimum": 0, "maximum": 2147483647},
-    "parameters": {
+    "parameters": {"type": "object"},
+    "style": {"$ref": "#/$defs/style"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"factory": {"const": "cliff_kitchen"}}},
+      "then": {"properties": {"parameters": {"$ref": "#/$defs/cliffKitchenParameters"}}}
+    },
+    {
+      "if": {"properties": {"factory": {"const": "cliff_ground_floor"}}},
+      "then": {"properties": {"parameters": {"$ref": "#/$defs/cliffGroundFloorParameters"}}}
+    }
+  ],
+  "$defs": {
+    "style": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "width", "depth", "wall_height", "roof_pitch_deg",
-        "eave_overhang", "platform_height", "cliff_embed", "stone_step_count"
-      ],
+      "required": ["palette", "roof", "wood"],
       "properties": {
-        "width": {"type": "number", "minimum": 3.0, "maximum": 20.0},
+        "palette": {"type": "string", "enum": ["paper_ink_old_wood"]},
+        "roof": {"type": "string", "enum": ["dark_clay_tile"]},
+        "wood": {"type": "string", "enum": ["aged_dark_timber"]}
+      }
+    },
+    "commonParameterProperties": {
+      "type": "object",
+      "properties": {
+        "width": {"type": "number", "minimum": 3.0, "maximum": 30.0},
         "depth": {"type": "number", "minimum": 2.5, "maximum": 14.0},
         "wall_height": {"type": "number", "minimum": 2.0, "maximum": 6.0},
         "roof_pitch_deg": {"type": "number", "minimum": 15.0, "maximum": 55.0},
@@ -31,14 +50,70 @@
         "moss": {"type": "number", "minimum": 0.0, "maximum": 1.0}
       }
     },
-    "style": {
+    "cliffKitchenParameters": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["palette", "roof", "wood"],
+      "required": [
+        "width", "depth", "wall_height", "roof_pitch_deg",
+        "eave_overhang", "platform_height", "cliff_embed", "stone_step_count"
+      ],
       "properties": {
-        "palette": {"type": "string", "enum": ["paper_ink_old_wood"]},
-        "roof": {"type": "string", "enum": ["dark_clay_tile"]},
-        "wood": {"type": "string", "enum": ["aged_dark_timber"]}
+        "width": {"type": "number", "minimum": 3.0, "maximum": 30.0},
+        "depth": {"type": "number", "minimum": 2.5, "maximum": 14.0},
+        "wall_height": {"type": "number", "minimum": 2.0, "maximum": 6.0},
+        "roof_pitch_deg": {"type": "number", "minimum": 15.0, "maximum": 55.0},
+        "eave_overhang": {"type": "number", "minimum": 0.2, "maximum": 2.0},
+        "platform_height": {"type": "number", "minimum": 0.2, "maximum": 4.0},
+        "cliff_embed": {"type": "number", "minimum": 0.0, "maximum": 1.0},
+        "stone_step_count": {"type": "integer", "minimum": 3, "maximum": 30},
+        "post_count_x": {"type": "integer", "minimum": 2, "maximum": 12},
+        "wood_age": {"type": "number", "minimum": 0.0, "maximum": 1.0},
+        "tile_damage": {"type": "number", "minimum": 0.0, "maximum": 1.0},
+        "moss": {"type": "number", "minimum": 0.0, "maximum": 1.0}
+      }
+    },
+    "room": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "template", "width"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "template": {
+          "type": "string",
+          "enum": ["sect_gate_room", "infirmary_rest_room", "kitchen_room", "dining_room"]
+        },
+        "width": {"type": "number", "minimum": 2.5, "maximum": 8.0},
+        "lantern_count": {"type": "integer", "minimum": 0, "maximum": 6},
+        "occupancy": {"type": "integer", "minimum": 0, "maximum": 12},
+        "clutter": {"type": "number", "minimum": 0.0, "maximum": 1.0}
+      }
+    },
+    "cliffGroundFloorParameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "width", "depth", "wall_height", "roof_pitch_deg", "eave_overhang",
+        "platform_height", "cliff_embed", "stone_step_count", "rooms"
+      ],
+      "properties": {
+        "width": {"type": "number", "minimum": 3.0, "maximum": 30.0},
+        "depth": {"type": "number", "minimum": 2.5, "maximum": 14.0},
+        "wall_height": {"type": "number", "minimum": 2.0, "maximum": 6.0},
+        "roof_pitch_deg": {"type": "number", "minimum": 15.0, "maximum": 55.0},
+        "eave_overhang": {"type": "number", "minimum": 0.2, "maximum": 2.0},
+        "platform_height": {"type": "number", "minimum": 0.2, "maximum": 4.0},
+        "cliff_embed": {"type": "number", "minimum": 0.0, "maximum": 1.0},
+        "stone_step_count": {"type": "integer", "minimum": 3, "maximum": 30},
+        "post_count_x": {"type": "integer", "minimum": 2, "maximum": 12},
+        "wood_age": {"type": "number", "minimum": 0.0, "maximum": 1.0},
+        "tile_damage": {"type": "number", "minimum": 0.0, "maximum": 1.0},
+        "moss": {"type": "number", "minimum": 0.0, "maximum": 1.0},
+        "rooms": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 8,
+          "items": {"$ref": "#/$defs/room"}
+        }
       }
     }
   }
