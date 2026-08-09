@@ -12,10 +12,16 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
       - name: Run scene-spec contract tests
         run: python tests/test_scene_spec.py
+
       - name: Run reference-analyzer contract tests
         run: python tests/test_reference_analyzer.py
+
+      - name: Run visual-review contract tests
+        run: python tests/test_visual_review.py
+
       - name: Resolve mother-image analysis into scene spec
         run: |
           python tools/resolve_reference.py \
@@ -33,17 +39,48 @@ jobs:
           assert spec['factory'] == 'cliff_ground_floor'
           assert spec['parameters']['width'] == 21.2
           assert len(spec['parameters']['rooms']) == 4
+          assert len(report['room_decisions']) == 16
+          assert all(item['accepted'] for item in report['room_decisions'])
           rejected = {d['parameter']: d for d in report['decisions'] if not d['accepted']}
           assert 'roof_pitch_deg' in rejected
           assert 'does not own parameter' in rejected['roof_pitch_deg']['reason']
           PY
+
+      - name: Apply bounded visual QA repair
+        run: |
+          python tools/apply_visual_review.py \
+            --spec build/reference/cliff_ground_floor.scene_spec.json \
+            --review examples/cliff_ground_floor.visual_review.json \
+            --out build/repair/cliff_ground_floor.scene_spec.json \
+            --report build/repair/cliff_ground_floor.repair.json \
+            --minimum-confidence 0.40
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          spec = json.loads(Path('build/repair/cliff_ground_floor.scene_spec.json').read_text())
+          report = json.loads(Path('build/repair/cliff_ground_floor.repair.json').read_text())
+          rooms = {room['id']: room for room in spec['parameters']['rooms']}
+          assert spec['parameters']['cliff_embed'] == 0.70
+          assert spec['parameters']['platform_height'] == 0.72
+          assert rooms['gate']['lantern_count'] == 4
+          assert rooms['kitchen']['clutter'] == 1.0
+          assert rooms['dining']['occupancy'] == 8
+          assert all(item['accepted'] for item in report['decisions'])
+          assert all(item['accepted'] for item in report['room_decisions'])
+          severe = [gap for gap in report['template_gaps'] if gap['severity'] >= 0.80]
+          assert len(severe) >= 4
+          PY
+
       - name: Compile Python sources
         run: >-
           python -m py_compile
           compiler/spec.py
           compiler/templates.py
           analyzer/reference.py
+          qa/visual_review.py
           tools/resolve_reference.py
+          tools/apply_visual_review.py
           blender/build_asset.py
           blender/primitives.py
           blender/room_factories.py
@@ -52,3 +89,4 @@ jobs:
           blender/validation.py
           tests/test_scene_spec.py
           tests/test_reference_analyzer.py
+          tests/test_visual_review.py
