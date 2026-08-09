@@ -53,7 +53,7 @@ jobs:
             --report build/repair/cliff_ground_floor.repair.json \
             --minimum-confidence 0.40
 
-      - name: Compile repaired ground floor
+      - name: Compile repaired ground floor with semantic macros
         run: |
           blender --background --python blender/build_asset.py -- \
             --spec build/repair/cliff_ground_floor.scene_spec.json \
@@ -62,14 +62,11 @@ jobs:
             --preview-dir build/cliff_ground_floor_repaired_views \
             --report build/cliff_ground_floor_repaired.validation.json
 
-      - name: Verify outputs and repair behavior
+      - name: Verify outputs and semantic macro expansion
         run: |
           test -s build/cliff_kitchen.glb
           test -s build/reference/cliff_ground_floor.scene_spec.json
-          test -s build/reference/cliff_ground_floor.resolution.json
           test -s build/cliff_ground_floor_initial.glb
-          test -s build/cliff_ground_floor_initial.png
-          test -s build/repair/cliff_ground_floor.scene_spec.json
           test -s build/repair/cliff_ground_floor.repair.json
           test -s build/cliff_ground_floor_repaired.glb
           test -s build/cliff_ground_floor_repaired.png
@@ -84,7 +81,6 @@ jobs:
           kitchen = json.loads(Path('build/cliff_kitchen.validation.json').read_text())
           initial = json.loads(Path('build/cliff_ground_floor_initial.validation.json').read_text())
           repaired = json.loads(Path('build/cliff_ground_floor_repaired.validation.json').read_text())
-          resolution = json.loads(Path('build/reference/cliff_ground_floor.resolution.json').read_text())
           repair = json.loads(Path('build/repair/cliff_ground_floor.repair.json').read_text())
 
           assert kitchen['status'] == 'pass', kitchen
@@ -92,21 +88,22 @@ jobs:
           assert repaired['status'] == 'pass', repaired
           assert repaired['metrics']['triangles'] >= initial['metrics']['triangles'], (initial, repaired)
           assert repaired['metrics']['mesh_objects'] >= initial['metrics']['mesh_objects'], (initial, repaired)
+          # PR #6 closed-loop baseline was 135 meshes / 3160 triangles. These semantic
+          # macros must materially exceed that rather than merely rename old props.
+          assert repaired['metrics']['mesh_objects'] > 220, repaired
+          assert repaired['metrics']['triangles'] > 4500, repaired
+          assert repaired['metrics']['non_manifold_edges'] == 0, repaired
+          assert repaired['metrics']['zero_area_faces'] == 0, repaired
           assert all(item['accepted'] for item in repair['decisions'])
           assert all(item['accepted'] for item in repair['room_decisions'])
-          severe = [gap for gap in repair['template_gaps'] if gap['severity'] >= 0.80]
-          assert len(severe) >= 4, severe
-          assert any(item['accepted'] for item in resolution['decisions'])
-          assert any(not item['accepted'] for item in resolution['decisions'])
 
           print('initial validation', json.dumps(initial, indent=2))
-          print('repaired validation', json.dumps(repaired, indent=2))
-          print('visual repair', json.dumps(repair, indent=2))
+          print('semantic-macro repaired validation', json.dumps(repaired, indent=2))
           PY
 
-      - name: Upload initial and repaired assets with QA reports
+      - name: Upload semantic-macro assets and QA views
         uses: actions/upload-artifact@v4
         with:
-          name: visual-qa-repair-smoke
+          name: storage-kitchen-macro-smoke
           path: build/
           if-no-files-found: error

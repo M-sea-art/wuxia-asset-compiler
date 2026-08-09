@@ -24,16 +24,27 @@ def _make_material_pack(wood_age: float, moss: float) -> dict[str, Any]:
     stone_hex = f"#{int(255 * 0.26):02x}{stone_green:02x}{int(255 * 0.22):02x}"
     return {
         "wood": make_material("Wuxia_AgedWood", wood_hex, roughness=0.78),
+        "wood_detail": make_material("Wuxia_DarkWoodDetail", "#2a1b12", roughness=0.82),
         "roof": make_material("Wuxia_DarkTile", "#242426", roughness=0.84),
         "stone": make_material("Wuxia_Stone", stone_hex, roughness=0.93),
+        "ceramic": make_material("Wuxia_Ceramic", "#5e5745", roughness=0.80),
         "plaster": make_material("Wuxia_Plaster", "#afa891", roughness=0.90),
         "cloth": make_material("Wuxia_Cloth", "#6d6556", roughness=0.95),
+        "rope": make_material("Wuxia_Rope", "#5a4027", roughness=0.98),
+        "basket": make_material("Wuxia_Basket", "#765331", roughness=0.96),
+        "produce": make_material("Wuxia_Produce", "#59623a", roughness=0.92),
         "metal": make_material("Wuxia_Iron", "#25282a", roughness=0.55, metallic=0.65),
         "lantern": make_material(
             "Wuxia_LanternGlow",
             "#e7a54d",
             roughness=0.65,
             emission_strength=1.6,
+        ),
+        "fire": make_material(
+            "Wuxia_HearthFire",
+            "#ff5a16",
+            roughness=0.45,
+            emission_strength=5.0,
         ),
     }
 
